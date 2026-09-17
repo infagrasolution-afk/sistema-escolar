@@ -1,0 +1,51 @@
+# =============================================================================
+# RENDER BLUEPRINT (INFRASTRUCTURE AS CODE) FOR SCHOOL SYSTEM
+# =============================================================================
+
+databases:
+  - name: escuela-postgres
+    databaseName: escuela_db
+    user: postgres
+    plan: free # o starter para producción
+    region: oregon # o la región de tu preferencia
+
+services:
+  # 1. Servicio Web Backend FastAPI
+  - type: web
+    name: escuela-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: escuela_postgres
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
+        sync: false
+
+  # 2. Sitio Estático Frontend React SPA
+  - type: static
+    name: escuela-frontend
+    region: oregon
+    buildCommand: "cd frontend && npm install && npm run build"
+    staticPublishPath: "./frontend/build"
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: escuela-backend
+          property: url
+          postfix: "/api/v1"
