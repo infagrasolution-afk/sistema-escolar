@@ -31,6 +31,8 @@ import PrintIcon from '@mui/icons-material/Print';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+import BulkUploadModal from './BulkUploadModal';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
 
 export const StudentManagement = () => {
@@ -38,6 +40,7 @@ export const StudentManagement = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [openModal, setOpenModal] = useState(false);
+  const [openBulkModal, setOpenBulkModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   // Form State
@@ -81,6 +84,7 @@ export const StudentManagement = () => {
     setErrorMsg(null);
     setOpenModal(true);
   };
+
 
   const handleOpenEdit = (est) => {
     setSelectedStudent(est);
@@ -166,15 +170,25 @@ export const StudentManagement = () => {
             </Box>
           </Box>
 
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<PersonAddIcon />}
-            onClick={handleOpenCreate}
-            sx={{ fontWeight: 'bold' }}
-          >
-            Nuevo Estudiante
-          </Button>
+          <Box display="flex" gap={2}>
+            <Button
+              variant="outlined"
+              color="info"
+              onClick={() => setOpenBulkModal(true)}
+              sx={{ fontWeight: 'bold' }}
+            >
+              Carga Masiva (CSV)
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<PersonAddIcon />}
+              onClick={handleOpenCreate}
+              sx={{ fontWeight: 'bold' }}
+            >
+              Nuevo Estudiante
+            </Button>
+          </Box>
         </Paper>
 
         {/* Buscador */}
@@ -322,9 +336,16 @@ export const StudentManagement = () => {
             </DialogActions>
           </form>
         </Dialog>
+
+        <BulkUploadModal
+          open={openBulkModal}
+          onClose={() => setOpenBulkModal(false)}
+          onSuccess={() => fetchEstudiantes(search)}
+        />
       </Container>
     </Box>
   );
 };
+
 
 export default StudentManagement;

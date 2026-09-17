@@ -5,6 +5,7 @@ import LoginView from './components/LoginView';
 import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import KioskScanner from './components/KioskScanner';
+import ColegioConfigView from './components/ColegioConfigView';
 import StudentCardPrint from './components/StudentCardPrint';
 import StudentManagement from './components/StudentManagement';
 import RepresentativeManagement from './components/RepresentativeManagement';
@@ -37,6 +38,16 @@ export const App = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/colegio/config"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN_CARNET', 'ADMIN_ACCESO', 'SUPER_ADMIN']}>
+                <ColegioConfigView />
+              </ProtectedRoute>
+            }
+          />
+
 
           <Route
             path="/estudiantes"

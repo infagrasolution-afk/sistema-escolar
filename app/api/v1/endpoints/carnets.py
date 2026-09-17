@@ -1,12 +1,13 @@
-from typing import Any, List
+from typing import Any, List, Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.endpoints.colegio import _colegio_config_db
 from app.core.database import get_db
 from app.core.deps import require_role
 from app.models.enums import RolUsuario
@@ -19,6 +20,10 @@ router = APIRouter()
 
 class BatchPdfRequest(BaseModel):
     estudiante_ids: List[uuid.UUID]
+    tipo_organizacion: Optional[str] = None
+    orientacion: Optional[str] = None
+    color_primario: Optional[str] = None
+    cara: Optional[str] = "FRONTAL"
 
 
 @router.get(
@@ -28,6 +33,10 @@ class BatchPdfRequest(BaseModel):
 )
 async def get_carnet_pdf(
     estudiante_id: uuid.UUID,
+    tipo_organizacion: Optional[str] = Query(None, description="COLEGIO o COOPERATIVA_TRANSPORTE"),
+    orientacion: Optional[str] = Query(None, description="HORIZONTAL o VERTICAL"),
+    color_primario: Optional[str] = Query(None, description="Hex color por ej. #1e3a8a"),
+    cara: str = Query("FRONTAL", description="FRONTAL, REVERSO o AMBAS"),
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(
         require_role([
@@ -51,7 +60,21 @@ async def get_carnet_pdf(
             detail="Estudiante no encontrado en la base de datos",
         )
 
-    pdf_buffer = generar_pdf_carnets_batch([estudiante])
+    tipo_org = tipo_organizacion or _colegio_config_db.tipo_organizacion
+    ori = orientacion or _colegio_config_db.orientacion_predeterminada
+    color_p = color_primario or _colegio_config_db.color_primario
+
+    pdf_buffer = generar_pdf_carnets_batch(
+        estudiantes=[estudiante],
+        tipo_organizacion=tipo_org,
+        orientacion=ori,
+        color_primario_hex=color_p,
+        cara=cara,
+        nombre_institucion=_colegio_config_db.nombre_institucion,
+        subtitulo_carnet=_colegio_config_db.subtitulo_carnet,
+        ano_escolar=_colegio_config_db.ano_escolar,
+        poliza_seguro=_colegio_config_db.poliza_seguro,
+    )
 
     return StreamingResponse(
         pdf_buffer,
@@ -98,7 +121,22 @@ async def get_carnets_batch_pdf(
             detail="No se encontraron estudiantes para los IDs proporcionados",
         )
 
-    pdf_buffer = generar_pdf_carnets_batch(list(estudiantes))
+    tipo_org = batch_data.tipo_organizacion or _colegio_config_db.tipo_organizacion
+    ori = batch_data.orientacion or _colegio_config_db.orientacion_predeterminada
+    color_p = batch_data.color_primario or _colegio_config_db.color_primario
+    cara = batch_data.cara or "FRONTAL"
+
+    pdf_buffer = generar_pdf_carnets_batch(
+        estudiantes=list(estudiantes),
+        tipo_organizacion=tipo_org,
+        orientacion=ori,
+        color_primario_hex=color_p,
+        cara=cara,
+        nombre_institucion=_colegio_config_db.nombre_institucion,
+        subtitulo_carnet=_colegio_config_db.subtitulo_carnet,
+        ano_escolar=_colegio_config_db.ano_escolar,
+        poliza_seguro=_colegio_config_db.poliza_seguro,
+    )
 
     return StreamingResponse(
         pdf_buffer,

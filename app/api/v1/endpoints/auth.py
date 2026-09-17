@@ -27,7 +27,7 @@ async def login(
     request: Request,
     db: AsyncSession = Depends(get_db),
     login_data: Optional[LoginRequest] = None,
-    form_data: Optional[OAuth2PasswordRequestForm] = Depends(),
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
     Endpoint de Autenticación de Usuarios.

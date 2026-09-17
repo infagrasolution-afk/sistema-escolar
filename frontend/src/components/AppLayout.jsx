@@ -22,6 +22,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import BusinessIcon from '@mui/icons-material/Business';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
@@ -60,6 +61,12 @@ export const AppLayout = () => {
       roles: ['ADMIN_CARNET', 'OPERADOR_IMPRESION', 'SUPER_ADMIN'],
     },
     {
+      text: 'Configuración Colegio',
+      icon: <BusinessIcon />,
+      path: '/colegio/config',
+      roles: ['ADMIN_CARNET', 'ADMIN_ACCESO', 'SUPER_ADMIN'],
+    },
+    {
       text: 'Estudiantes',
       icon: <SchoolIcon />,
       path: '/estudiantes',
@@ -84,6 +91,7 @@ export const AppLayout = () => {
       roles: ['SUPER_ADMIN'],
     },
   ];
+
 
   const drawerContent = (
     <Box sx={{ height: '100%', bgcolor: '#1e293b', color: '#ffffff', display: 'flex', flexDirection: 'column' }}>

@@ -1,7 +1,7 @@
 from typing import Any, List, Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -170,3 +170,48 @@ async def delete_estudiante(
 
     await db.delete(estudiante)
     await db.commit()
+
+
+@router.get(
+    "/plantilla-descarga",
+    summary="Descargar plantilla CSV para carga masiva",
+)
+async def download_csv_template() -> Any:
+    """
+    Retorna un archivo CSV con la estructura requerida para importar la data de los carnets masivamente.
+    """
+    from fastapi.responses import Response
+    from app.services.bulk_import_service import generate_bulk_import_csv_template
+
+    csv_data = generate_bulk_import_csv_template()
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="plantilla_carga_masiva_estudiantes.csv"'},
+    )
+
+
+@router.post(
+    "/carga-masiva",
+    summary="Carga masiva de estudiantes y representantes mediante CSV/Excel",
+)
+async def bulk_upload_estudiantes(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(
+        require_role([
+            RolUsuario.ADMIN_CARNET,
+            RolUsuario.ADMIN_ACCESO,
+            RolUsuario.SUPER_ADMIN,
+        ])
+    ),
+) -> Any:
+    """
+    Procesa un archivo CSV o TXT con la lista de personas/estudiantes/socios para registro masivo en línea.
+    """
+    from app.services.bulk_import_service import process_bulk_import_csv
+
+    content = await file.read()
+    res = await process_bulk_import_csv(content, db)
+    return res
+
