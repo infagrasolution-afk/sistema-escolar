@@ -5,9 +5,7 @@
 databases:
   - name: escuela-postgres
     databaseName: escuela_db
-    user: postgres
-    plan: free # o starter para producción
-    region: oregon # o la región de tu preferencia
+    plan: free
 
 services:
   # 1. Servicio Web Backend FastAPI
@@ -40,7 +38,6 @@ services:
   - type: web
     name: escuela-frontend
     env: static
-    region: oregon
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: "./frontend/build"
     envVars:
@@ -48,5 +45,5 @@ services:
         fromService:
           type: web
           name: escuela-backend
-          property: url
+          property: host
           postfix: "/api/v1"
