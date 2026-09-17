@@ -14,7 +14,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+import API_BASE_URL from '../apiConfig';
 
 export const LoginView = () => {
   const [email, setEmail] = useState('');

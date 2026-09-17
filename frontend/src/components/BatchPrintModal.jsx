@@ -18,7 +18,7 @@ import PrintIcon from '@mui/icons-material/Print';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+import API_BASE_URL from '../apiConfig';
 
 export const BatchPrintModal = ({ open, onClose, estudiantes = [] }) => {
   const [selectedIds, setSelectedIds] = useState([]);

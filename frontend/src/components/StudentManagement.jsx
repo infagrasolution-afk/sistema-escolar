@@ -33,7 +33,7 @@ import { useNavigate } from 'react-router-dom';
 
 import BulkUploadModal from './BulkUploadModal';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+import API_BASE_URL from '../apiConfig';
 
 export const StudentManagement = () => {
   const [estudiantes, setEstudiantes] = useState([]);

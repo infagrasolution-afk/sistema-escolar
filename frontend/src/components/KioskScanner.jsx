@@ -24,7 +24,7 @@ import axios from 'axios';
 import useBarcodeScanner from '../hooks/useBarcodeScanner';
 import ContingencyCamera from './ContingencyCamera';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+import API_BASE_URL from '../apiConfig';
 
 export const KioskScanner = () => {
   const [currentTime, setCurrentTime] = useState(new Date());

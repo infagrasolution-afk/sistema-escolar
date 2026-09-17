@@ -19,13 +19,15 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PrintIcon from '@mui/icons-material/Print';
 import axios from 'axios';
 
+import API_BASE_URL from '../apiConfig';
+
 export const BulkUploadModal = ({ open, onClose, onSuccess }) => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+  const apiBaseUrl = API_BASE_URL;
 
   const handleDownloadTemplate = () => {
     window.open(`${apiBaseUrl}/estudiantes/plantilla-descarga`, '_blank');

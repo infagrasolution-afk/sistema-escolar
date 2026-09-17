@@ -28,7 +28,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+import API_BASE_URL from '../apiConfig';
 
 export const RepresentativeManagement = () => {
   const [representantes, setRepresentantes] = useState([]);

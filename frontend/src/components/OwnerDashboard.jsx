@@ -24,7 +24,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+import API_BASE_URL from '../apiConfig';
 
 export const OwnerDashboard = () => {
   const [metrics, setMetrics] = useState(null);

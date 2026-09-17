@@ -20,6 +20,8 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import StyleIcon from '@mui/icons-material/Style';
 import axios from 'axios';
 
+import API_BASE_URL from '../apiConfig';
+
 export const StudentCardPrint = ({ estudiante }) => {
   const printRef = useRef(null);
 
@@ -31,7 +33,7 @@ export const StudentCardPrint = ({ estudiante }) => {
   const [nombreInst, setNombreInst] = useState('UNIDAD EDUCATIVA PRIVADA COLEGIO SAN AGUSTÍN');
   const [subtitulo, setSubtitulo] = useState('CARNET DE IDENTIFICACIÓN ESCOLAR');
 
-  const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+  const apiBaseUrl = API_BASE_URL;
 
   useEffect(() => {
     fetchColegioConfig();

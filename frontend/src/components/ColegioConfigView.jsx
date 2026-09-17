@@ -21,6 +21,8 @@ import BusinessIcon from '@mui/icons-material/Business';
 import PaletteIcon from '@mui/icons-material/Palette';
 import axios from 'axios';
 
+import API_BASE_URL from '../apiConfig';
+
 export const ColegioConfigView = () => {
   const [config, setConfig] = useState({
     nombre_institucion: '',
@@ -36,7 +38,7 @@ export const ColegioConfigView = () => {
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+  const apiBaseUrl = API_BASE_URL;
 
   useEffect(() => {
     fetchConfig();
