@@ -1,3 +1,4 @@
+import json
 from typing import Any, List, Optional
 import uuid
 
@@ -19,6 +20,33 @@ ALLOWED_USER_MANAGERS = [
     RolUsuario.ADMIN_CARNET,
     RolUsuario.ADMIN_ACCESO,
 ]
+
+
+def _to_modulos_str(modulos: Optional[List[str]]) -> Optional[str]:
+    if not modulos:
+        return None
+    return json.dumps(modulos)
+
+
+def _to_modulos_list(modulos_str: Optional[str]) -> Optional[List[str]]:
+    if not modulos_str:
+        return None
+    try:
+        return json.loads(modulos_str)
+    except Exception:
+        return [m.strip() for m in modulos_str.split(",") if m.strip()]
+
+
+def _build_user_response(u: Usuario) -> UsuarioResponse:
+    return UsuarioResponse(
+        id=u.id,
+        email=u.email,
+        rol=u.rol,
+        colegio_id=u.colegio_id,
+        modulos_permitidos=_to_modulos_list(u.modulos_permitidos),
+        activo=u.activo,
+        created_at=u.created_at,
+    )
 
 
 @router.get(
@@ -46,7 +74,8 @@ async def get_usuarios(
         query = query.where(Usuario.colegio_id == current_user.colegio_id)
 
     result = await db.execute(query)
-    return result.scalars().all()
+    users = result.scalars().all()
+    return [_build_user_response(u) for u in users]
 
 
 @router.post(
@@ -61,7 +90,7 @@ async def create_usuario(
     current_user: Usuario = Depends(require_role(ALLOWED_USER_MANAGERS)),
 ) -> Any:
     """
-    Crea un nuevo usuario asignado a la organización actual.
+    Crea un nuevo usuario asignado a la organización actual y parametriza sus módulos asignados.
     """
     # Verificar disponibilidad del nombre de usuario / correo
     query = select(Usuario).where(Usuario.email == user_in.email)
@@ -88,18 +117,19 @@ async def create_usuario(
         password_hash=get_password_hash(user_in.password),
         rol=user_in.rol,
         colegio_id=assigned_colegio_id,
+        modulos_permitidos=_to_modulos_str(user_in.modulos_permitidos),
         activo=user_in.activo,
     )
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
-    return db_user
+    return _build_user_response(db_user)
 
 
 @router.put(
     "/{usuario_id}",
     response_model=UsuarioResponse,
-    summary="Actualizar rol o estado activo de un usuario del cliente",
+    summary="Actualizar rol, empresa asignada o módulos permitidos de un usuario",
 )
 async def update_usuario(
     usuario_id: uuid.UUID,
@@ -141,12 +171,14 @@ async def update_usuario(
         user.rol = user_in.rol
     if user_in.activo is not None:
         user.activo = user_in.activo
+    if user_in.modulos_permitidos is not None:
+        user.modulos_permitidos = _to_modulos_str(user_in.modulos_permitidos)
     if user_in.colegio_id is not None and current_user.rol == RolUsuario.SUPER_ADMIN:
         user.colegio_id = user_in.colegio_id
 
     await db.commit()
     await db.refresh(user)
-    return user
+    return _build_user_response(user)
 
 
 @router.delete(

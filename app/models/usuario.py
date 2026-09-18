@@ -44,6 +44,10 @@ class Usuario(Base):
         nullable=True,
         index=True,
     )
+    modulos_permitidos: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
     activo: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

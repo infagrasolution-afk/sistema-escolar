@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -11,6 +11,7 @@ class UsuarioBase(BaseModel):
     email: str  # Nombre de usuario o correo electrónico
     rol: RolUsuario
     colegio_id: Optional[UUID] = None
+    modulos_permitidos: Optional[List[str]] = None
     activo: bool = True
 
 
@@ -23,6 +24,7 @@ class UsuarioUpdate(BaseModel):
     password: Optional[str] = None
     rol: Optional[RolUsuario] = None
     colegio_id: Optional[UUID] = None
+    modulos_permitidos: Optional[List[str]] = None
     activo: Optional[bool] = None
 
 

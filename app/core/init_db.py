@@ -53,6 +53,9 @@ async def init_db_users() -> None:
                 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS colegio_id UUID REFERENCES colegios(id) ON DELETE CASCADE;
             """))
             await conn.execute(text("""
+                ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS modulos_permitidos TEXT;
+            """))
+            await conn.execute(text("""
                 ALTER TABLE estudiantes ADD COLUMN IF NOT EXISTS colegio_id UUID REFERENCES colegios(id) ON DELETE CASCADE;
             """))
 

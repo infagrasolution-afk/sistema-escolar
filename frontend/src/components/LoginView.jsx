@@ -47,10 +47,24 @@ export const LoginView = () => {
       const user = userRes.data;
       localStorage.setItem('user_role', user.rol);
       localStorage.setItem('user_email', user.email);
+      if (user.modulos_permitidos) {
+        localStorage.setItem('modulos_permitidos', JSON.stringify(user.modulos_permitidos));
+      } else {
+        localStorage.removeItem('modulos_permitidos');
+      }
 
-      // Redirigir según el rol del usuario
+      // Redirigir según el rol y módulos permitidos del usuario
+      const mods = user.modulos_permitidos || [];
       if (user.rol === 'SUPER_ADMIN') {
         navigate('/admin/dashboard');
+      } else if (mods.length > 0) {
+        if (mods.includes('carnets')) navigate('/carnets');
+        else if (mods.includes('kiosco')) navigate('/kiosco');
+        else if (mods.includes('estudiantes')) navigate('/estudiantes');
+        else if (mods.includes('colegio') || mods.includes('colegio_config')) navigate('/colegio/config');
+        else if (mods.includes('representantes')) navigate('/representantes');
+        else if (mods.includes('usuarios')) navigate('/usuarios');
+        else navigate('/estudiantes');
       } else if (user.rol === 'ADMIN_CARNET' || user.rol === 'OPERADOR_IMPRESION') {
         navigate('/carnets');
       } else if (user.rol === 'OPERADOR_ESCANEO' || user.rol === 'ADMIN_ACCESO') {
