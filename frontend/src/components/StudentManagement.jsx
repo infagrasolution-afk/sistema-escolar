@@ -300,12 +300,49 @@ export const StudentManagement = () => {
                 required
               />
 
+              {/* Campo y Botón para Subir Foto de Perfil */}
+              <Box display="flex" alignItems="center" gap={2} my={2}>
+                <Avatar src={fotoUrl} sx={{ width: 64, height: 64, border: '2px solid #38bdf8' }}>
+                  {nombres ? nombres[0] : 'F'}
+                </Avatar>
+                <Box flex={1}>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    color="info"
+                    size="small"
+                    fullWidth
+                  >
+                    Subir Imagen de Foto (PNG / JPG)
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files && e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setFotoUrl(reader.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                    Seleccione una foto desde su equipo o ingrese el enlace web abajo.
+                  </Typography>
+                </Box>
+              </Box>
+
               <TextField
                 fullWidth
-                label="URL de Foto de Perfil"
+                label="URL o Datos de Foto"
                 value={fotoUrl}
                 onChange={(e) => setFotoUrl(e.target.value)}
                 margin="normal"
+                size="small"
                 placeholder="https://..."
               />
 
