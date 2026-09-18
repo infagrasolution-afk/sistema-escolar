@@ -92,8 +92,11 @@ async def create_usuario(
     """
     Crea un nuevo usuario asignado a la organización actual y parametriza sus módulos asignados.
     """
-    # Verificar disponibilidad del nombre de usuario / correo
-    query = select(Usuario).where(Usuario.email == user_in.email)
+    clean_email = user_in.email.strip()
+    clean_password = user_in.password.strip()
+
+    # Verificar disponibilidad del nombre de usuario / correo (insensible a mayúsculas)
+    query = select(Usuario).where(func.lower(Usuario.email) == clean_email.lower())
     result = await db.execute(query)
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -113,8 +116,8 @@ async def create_usuario(
             )
 
     db_user = Usuario(
-        email=user_in.email,
-        password_hash=get_password_hash(user_in.password),
+        email=clean_email,
+        password_hash=get_password_hash(clean_password),
         rol=user_in.rol,
         colegio_id=assigned_colegio_id,
         modulos_permitidos=_to_modulos_str(user_in.modulos_permitidos),
@@ -163,10 +166,10 @@ async def update_usuario(
                 detail="No tiene permisos para promover usuarios a ADMIN_CARNET o SUPER_ADMIN",
             )
 
-    if user_in.email is not None:
-        user.email = user_in.email
-    if user_in.password is not None and user_in.password != "":
-        user.password_hash = get_password_hash(user_in.password)
+    if user_in.email is not None and user_in.email.strip() != "":
+        user.email = user_in.email.strip()
+    if user_in.password is not None and user_in.password.strip() != "":
+        user.password_hash = get_password_hash(user_in.password.strip())
     if user_in.rol is not None:
         user.rol = user_in.rol
     if user_in.activo is not None:

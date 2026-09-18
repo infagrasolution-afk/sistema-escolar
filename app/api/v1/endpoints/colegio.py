@@ -86,18 +86,21 @@ async def create_colegio(
     Crea un nuevo cliente en el sistema multi-tenancy y genera automáticamente
     las credenciales del Administrador de dicho plantel.
     """
+    clean_email = colegio_in.admin_email.strip()
+    clean_password = colegio_in.admin_password.strip()
+
     # Verificar si el usuario admin ya existe
-    user_check = await db.execute(select(Usuario).where(Usuario.email == colegio_in.admin_email))
+    user_check = await db.execute(select(Usuario).where(func.lower(Usuario.email) == clean_email.lower()))
     if user_check.scalars().first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"El correo/usuario {colegio_in.admin_email} ya está registrado en la plataforma.",
+            detail=f"El correo/usuario {clean_email} ya está registrado en la plataforma.",
         )
 
     # Crear la organización/colegio
     nuevo_colegio = Colegio(
-        nombre=colegio_in.nombre,
-        rif_identificador=colegio_in.rif_identificador,
+        nombre=colegio_in.nombre.strip(),
+        rif_identificador=colegio_in.rif_identificador.strip() if colegio_in.rif_identificador else None,
         tipo_organizacion=colegio_in.tipo_organizacion,
         color_primario=colegio_in.color_primario,
         color_secundario=colegio_in.color_secundario,
@@ -109,8 +112,8 @@ async def create_colegio(
 
     # Crear usuario Administrador asignado a este colegio (Rol ADMIN_ACCESO)
     nuevo_admin = Usuario(
-        email=colegio_in.admin_email,
-        password_hash=get_password_hash(colegio_in.admin_password),
+        email=clean_email,
+        password_hash=get_password_hash(clean_password),
         rol=RolUsuario.ADMIN_ACCESO,
         colegio_id=nuevo_colegio.id,
         activo=True,

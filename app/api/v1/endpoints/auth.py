@@ -4,9 +4,9 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
+# ... imports ...
 from app.core.database import get_db
 from app.core.security import (
     create_access_token,
@@ -58,9 +58,12 @@ async def login(
             detail="Debe proporcionar usuario y contraseña para autenticarse",
         )
 
-    # Buscar usuario por nombre de usuario o email en la base de datos
+    clean_username = username_or_email.strip()
+    clean_password = password.strip()
+
+    # Buscar usuario por nombre de usuario o email en la base de datos (insensible a mayúsculas)
     try:
-        query = select(Usuario).where(Usuario.email == username_or_email)
+        query = select(Usuario).where(func.lower(Usuario.email) == clean_username.lower())
         result = await db.execute(query)
         user = result.scalar_one_or_none()
     except Exception as e:
@@ -70,8 +73,7 @@ async def login(
             detail="La base de datos se está inicializando. Intente nuevamente en unos segundos.",
         )
 
-
-    if not user or not verify_password(password, user.password_hash):
+    if not user or not (verify_password(clean_password, user.password_hash) or verify_password(password, user.password_hash)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales de acceso incorrectas",

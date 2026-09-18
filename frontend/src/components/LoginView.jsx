@@ -25,15 +25,18 @@ export const LoginView = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) return;
+    const cleanEmail = email.trim();
+    const cleanPassword = password.strip ? password.strip() : password.trim();
+
+    if (!cleanEmail || !cleanPassword) return;
 
     setLoading(true);
     setError(null);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-        email,
-        password,
+        email: cleanEmail,
+        password: cleanPassword,
       });
 
       const { access_token } = response.data;
