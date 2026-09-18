@@ -59,7 +59,6 @@ export const BatchPrintModal = ({ open, onClose, estudiantes = [] }) => {
         }
       );
 
-      // Descargar archivo blob PDF resultante
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -75,53 +74,96 @@ export const BatchPrintModal = ({ open, onClose, estudiantes = [] }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="h6" fontWeight="bold">
-          Impresión por Lotes (Zebra ZXP Series 7)
-        </Typography>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          bgcolor: '#1e293b',
+          color: '#ffffff',
+          borderRadius: 3,
+          border: '1px solid #334155',
+        },
+      }}
+    >
+      <DialogTitle display="flex" justifyContent="space-between" alignItems="center" sx={{ borderBottom: '1px solid #334155', pb: 2 }}>
+        <Box display="flex" alignItems="center" gap={1.5}>
+          <PrintIcon sx={{ color: '#38bdf8' }} />
+          <Typography variant="h6" fontWeight="bold">
+            Cola de Impresión por Lotes Zebra ZXP 7
+          </Typography>
+        </Box>
         <Chip
-          label={`${selectedIds.length} Seleccionados`}
+          label={`${selectedIds.length} / ${estudiantes.length} Seleccionados`}
           color={selectedIds.length > 0 ? 'primary' : 'default'}
+          sx={{ fontWeight: 'bold' }}
         />
       </DialogTitle>
 
-      <DialogContent dividers>
-        <Box display="flex" justifyContent="space-between" mb={2}>
-          <Button size="small" onClick={handleSelectAll}>
+      <DialogContent sx={{ py: 2 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="caption" color="#94a3b8">
+            Marque los carnets que enviará al controlador de impresión en formato CR-80.
+          </Typography>
+          <Button size="small" onClick={handleSelectAll} sx={{ color: '#38bdf8', fontWeight: 'bold' }}>
             {selectedIds.length === estudiantes.length
               ? 'Deseleccionar Todos'
               : 'Seleccionar Todos'}
           </Button>
         </Box>
 
-        <List sx={{ maxHeight: 300, overflow: 'auto' }}>
-          {estudiantes.map((estudiante) => {
-            const labelId = `checkbox-list-label-${estudiante.id}`;
-            return (
-              <ListItem key={estudiante.id} button onClick={handleToggle(estudiante.id)}>
-                <ListItemIcon>
-                  <Checkbox
-                    edge="start"
-                    checked={selectedIds.indexOf(estudiante.id) !== -1}
-                    tabIndex={-1}
-                    disableRipple
-                    inputProps={{ 'aria-labelledby': labelId }}
+        <List sx={{ maxHeight: 320, overflow: 'auto', bgcolor: '#0f172a', borderRadius: 2, p: 1, border: '1px solid #334155' }}>
+          {estudiantes.length === 0 ? (
+            <Box textAlign="center" py={4}>
+              <Typography variant="body2" color="#94a3b8">
+                No hay estudiantes registrados para imprimir.
+              </Typography>
+            </Box>
+          ) : (
+            estudiantes.map((estudiante) => {
+              const labelId = `checkbox-list-label-${estudiante.id}`;
+              const isChecked = selectedIds.indexOf(estudiante.id) !== -1;
+              return (
+                <ListItem
+                  key={estudiante.id}
+                  button
+                  onClick={handleToggle(estudiante.id)}
+                  sx={{
+                    borderRadius: 1.5,
+                    mb: 0.5,
+                    bgcolor: isChecked ? 'rgba(56, 189, 248, 0.1)' : 'transparent',
+                    border: isChecked ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent',
+                    '&:hover': { bgcolor: 'rgba(56, 189, 248, 0.15)' },
+                  }}
+                >
+                  <ListItemIcon>
+                    <Checkbox
+                      edge="start"
+                      checked={isChecked}
+                      tabIndex={-1}
+                      disableRipple
+                      sx={{ color: '#94a3b8', '&.Mui-checked': { color: '#38bdf8' } }}
+                      inputProps={{ 'aria-labelledby': labelId }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    id={labelId}
+                    primary={`${estudiante.nombres} ${estudiante.apellidos}`}
+                    primaryTypographyProps={{ fontWeight: 'bold', color: '#ffffff' }}
+                    secondary={`${estudiante.grado_seccion} | ID: ${estudiante.codigo_opaco}`}
+                    secondaryTypographyProps={{ color: '#94a3b8', variant: 'caption' }}
                   />
-                </ListItemIcon>
-                <ListItemText
-                  id={labelId}
-                  primary={`${estudiante.nombres} ${estudiante.apellidos}`}
-                  secondary={`${estudiante.grado_seccion} | Código: ${estudiante.codigo_opaco}`}
-                />
-              </ListItem>
-            );
-          })}
+                </ListItem>
+              );
+            })
+          )}
         </List>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} color="inherit">
+      <DialogActions sx={{ p: 2.5, borderTop: '1px solid #334155' }}>
+        <Button onClick={onClose} color="inherit" sx={{ color: '#94a3b8' }}>
           Cancelar
         </Button>
         <Button
@@ -130,8 +172,15 @@ export const BatchPrintModal = ({ open, onClose, estudiantes = [] }) => {
           startIcon={<PictureAsPdfIcon />}
           disabled={selectedIds.length === 0}
           onClick={handleExportBatchPdf}
+          sx={{
+            fontWeight: 'bold',
+            borderRadius: 2,
+            px: 3,
+            bgcolor: '#0284c7',
+            '&:hover': { bgcolor: '#0369a1' },
+          }}
         >
-          Exportar PDF Masivo (CR-80)
+          Exportar PDF Masivo CR-80 ({selectedIds.length})
         </Button>
       </DialogActions>
     </Dialog>

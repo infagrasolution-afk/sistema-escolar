@@ -12,6 +12,8 @@ import {
   TextField,
   Grid,
   Chip,
+  LinearProgress,
+  Tooltip,
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -19,6 +21,10 @@ import StyleIcon from '@mui/icons-material/Style';
 import BusinessIcon from '@mui/icons-material/Business';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
+import PeopleIcon from '@mui/icons-material/People';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import ContactPageIcon from '@mui/icons-material/ContactPage';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -149,97 +155,213 @@ export const StudentCardPrint = ({ estudiante }) => {
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
       {/* Card de Estado del Plantel / Empresa para la Administración de Carnetización */}
-      <Paper
-        className="no-print"
-        elevation={4}
-        sx={{
-          p: 3,
-          mb: 4,
-          width: '100%',
-          maxWidth: 900,
-          borderRadius: 3,
-          bgcolor: '#1e293b',
-          color: '#ffffff',
-          border: '1px solid #334155',
-        }}
-      >
-        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={2}>
-          <Box display="flex" alignItems="center" gap={1.5}>
-            <BusinessIcon sx={{ color: '#38bdf8', fontSize: 36 }} />
-            <Box>
-              <Typography variant="h6" fontWeight="bold">
-                {nombreInst}
-              </Typography>
-              <Typography variant="caption" color="#94a3b8">
-                Panel de Control de Información y Cola de Impresión Zebra ZXP 7
-              </Typography>
-            </Box>
-          </Box>
-
-          <Chip
-            icon={totalCargados > 0 ? <CheckCircleIcon /> : <WarningIcon />}
-            label={totalCargados > 0 ? "INFORMACIÓN CARGADA Y LISTA" : "PENDIENTE CARGA DE DATOS"}
-            color={totalCargados > 0 ? "success" : "warning"}
-            sx={{ fontWeight: 'bold', fontSize: '0.8rem', px: 1 }}
-          />
-        </Box>
-
-        <Grid container spacing={2} mb={3}>
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ p: 2, bgcolor: '#0f172a', borderRadius: 2, border: '1px solid #334155', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight="bold" color="#38bdf8">
-                {totalCargados}
-              </Typography>
-              <Typography variant="caption" color="#94a3b8">
-                Total Personas Cargadas
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ p: 2, bgcolor: '#0f172a', borderRadius: 2, border: '1px solid #334155', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight="bold" color="#10b981">
-                {conFotoCount}
-              </Typography>
-              <Typography variant="caption" color="#94a3b8">
-                Con Foto Asignada
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ p: 2, bgcolor: '#0f172a', borderRadius: 2, border: '1px solid #334155', textAlign: 'center' }}>
-              <Typography variant="h4" fontWeight="bold" color={sinFotoCount > 0 ? '#f59e0b' : '#94a3b8'}>
-                {sinFotoCount}
-              </Typography>
-              <Typography variant="caption" color="#94a3b8">
-                Sin Foto (Pendientes)
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-
-        <Box display="flex" gap={2} justifyContent="flex-end" flexWrap="wrap">
-          <Button
-            variant="outlined"
-            color="info"
-            onClick={() => navigate('/estudiantes')}
+      {(() => {
+        const porcentajeFotos = totalCargados > 0 ? Math.round((conFotoCount / totalCargados) * 100) : 0;
+        return (
+          <Paper
+            className="no-print"
+            elevation={6}
+            sx={{
+              p: 3.5,
+              mb: 4,
+              width: '100%',
+              maxWidth: 900,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+              color: '#ffffff',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
+            }}
           >
-            Administrar Lista / Carga Masiva
-          </Button>
+            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={2.5}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Avatar
+                  sx={{
+                    bgcolor: 'rgba(56, 189, 248, 0.15)',
+                    color: '#38bdf8',
+                    width: 52,
+                    height: 52,
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                  }}
+                >
+                  <BusinessIcon sx={{ fontSize: 30 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold" letterSpacing={0.3}>
+                    {nombreInst}
+                  </Typography>
+                  <Typography variant="body2" color="#94a3b8">
+                    Estado de Información Institucional y Cola de Impresión Zebra ZXP Series 7
+                  </Typography>
+                </Box>
+              </Box>
 
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<PrintIcon />}
-            disabled={totalCargados === 0}
-            onClick={() => setOpenBatchModal(true)}
-            sx={{ fontWeight: 'bold' }}
-          >
-            Impresión Masiva (Zebra ZXP 7)
-          </Button>
-        </Box>
-      </Paper>
+              <Chip
+                icon={totalCargados > 0 ? <CheckCircleIcon sx={{ '&&': { color: '#10b981' } }} /> : <WarningIcon sx={{ '&&': { color: '#f59e0b' } }} />}
+                label={totalCargados > 0 ? "DATOS CARGADOS Y LISTOS" : "PENDIENTE CARGA DE DATOS"}
+                sx={{
+                  bgcolor: totalCargados > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                  color: totalCargados > 0 ? '#34d399' : '#fbbf24',
+                  border: totalCargados > 0 ? '1px solid rgba(52, 211, 153, 0.4)' : '1px solid rgba(251, 191, 36, 0.4)',
+                  fontWeight: 'bold',
+                  fontSize: '0.8rem',
+                  py: 2,
+                  px: 1,
+                  borderRadius: 2,
+                }}
+              />
+            </Box>
+
+            {/* Barra de Progreso de Cobertura de Fotos */}
+            <Box sx={{ mb: 3, p: 2, bgcolor: 'rgba(15, 23, 42, 0.6)', borderRadius: 2, border: '1px solid #334155' }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="caption" color="#94a3b8" fontWeight="bold" display="flex" alignItems="center" gap={0.5}>
+                  <CameraAltIcon sx={{ fontSize: 16, color: '#38bdf8' }} /> Cobertura de Fotos para Carnetización
+                </Typography>
+                <Typography variant="caption" color="#38bdf8" fontWeight="bold">
+                  {porcentajeFotos}% Completado
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={porcentajeFotos}
+                sx={{
+                  height: 8,
+                  borderRadius: 4,
+                  bgcolor: '#334155',
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: porcentajeFotos === 100 ? '#10b981' : '#38bdf8',
+                    borderRadius: 4,
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Indicadores KPI */}
+            <Grid container spacing={2} mb={3}>
+              <Grid item xs={12} sm={4}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    bgcolor: '#0f172a',
+                    borderRadius: 2.5,
+                    border: '1px solid #334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': { transform: 'translateY(-2px)', borderColor: '#38bdf8' },
+                  }}
+                >
+                  <Avatar sx={{ bgcolor: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', width: 44, height: 44 }}>
+                    <PeopleIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight="bold" color="#ffffff">
+                      {totalCargados}
+                    </Typography>
+                    <Typography variant="caption" color="#94a3b8">
+                      Personas Cargadas
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    bgcolor: '#0f172a',
+                    borderRadius: 2.5,
+                    border: '1px solid #334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': { transform: 'translateY(-2px)', borderColor: '#10b981' },
+                  }}
+                >
+                  <Avatar sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', width: 44, height: 44 }}>
+                    <CameraAltIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight="bold" color="#10b981">
+                      {conFotoCount}
+                    </Typography>
+                    <Typography variant="caption" color="#94a3b8">
+                      Con Foto Lista
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    bgcolor: '#0f172a',
+                    borderRadius: 2.5,
+                    border: '1px solid #334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': { transform: 'translateY(-2px)', borderColor: sinFotoCount > 0 ? '#f59e0b' : '#334155' },
+                  }}
+                >
+                  <Avatar sx={{ bgcolor: sinFotoCount > 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(148, 163, 184, 0.1)', color: sinFotoCount > 0 ? '#f59e0b' : '#94a3b8', width: 44, height: 44 }}>
+                    <PendingActionsIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight="bold" color={sinFotoCount > 0 ? '#f59e0b' : '#94a3b8'}>
+                      {sinFotoCount}
+                    </Typography>
+                    <Typography variant="caption" color="#94a3b8">
+                      Sin Foto (Pendientes)
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            <Box display="flex" gap={2} justifyContent="flex-end" flexWrap="wrap">
+              <Button
+                variant="outlined"
+                color="info"
+                startIcon={<ContactPageIcon />}
+                onClick={() => navigate('/estudiantes')}
+                sx={{ borderRadius: 2, px: 2.5, fontWeight: 'bold' }}
+              >
+                Padrón de Estudiantes
+              </Button>
+
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<PrintIcon />}
+                disabled={totalCargados === 0}
+                onClick={() => setOpenBatchModal(true)}
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1,
+                  fontWeight: 'bold',
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  },
+                }}
+              >
+                Impresión Masiva (Zebra ZXP 7)
+              </Button>
+            </Box>
+          </Paper>
+        );
+      })()}
 
       {/* Panel de Personalización en Vivo */}
       <Paper
