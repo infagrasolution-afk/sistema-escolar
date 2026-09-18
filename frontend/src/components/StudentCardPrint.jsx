@@ -63,7 +63,12 @@ export const StudentCardPrint = ({ estudiante }) => {
   const [subtitulo, setSubtitulo] = useState('CARNET DE IDENTIFICACIÓN ESCOLAR');
   const [fondoUrl, setFondoUrl] = useState('');
 
-  // Estado del Plantel e Impresión
+  // Estado Multi-Tenancy de Clientes/Colegios
+  const [colegiosList, setColegiosList] = useState([]);
+  const [selectedColegioId, setSelectedColegioId] = useState('');
+  const [activeColegio, setActiveColegio] = useState(null);
+
+  // Estado del Listado de Personas e Impresión
   const [estudiantesList, setEstudiantesList] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [activeStudent, setActiveStudent] = useState(estudiante || null);
@@ -78,19 +83,44 @@ export const StudentCardPrint = ({ estudiante }) => {
   const apiBaseUrl = API_BASE_URL;
 
   useEffect(() => {
+    fetchColegiosList();
     fetchColegioConfig();
-    fetchEstudiantesList();
   }, []);
+
+  const fetchColegiosList = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const res = await axios.get(`${apiBaseUrl}/colegios`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setColegiosList(res.data);
+        setSelectedColegioId(res.data[0].id);
+        setActiveColegio(res.data[0]);
+        setNombreInst(res.data[0].nombre);
+        setTipoOrg(res.data[0].tipo_organizacion || 'COLEGIO');
+        fetchEstudiantesList(res.data[0].id);
+      } else {
+        fetchEstudiantesList();
+      }
+    } catch (err) {
+      console.error('Error cargando lista de colegios/clientes:', err);
+      fetchEstudiantesList();
+    }
+  };
 
   const fetchColegioConfig = async () => {
     try {
       const res = await axios.get(`${apiBaseUrl}/colegio/config`);
       if (res.data) {
-        setTipoOrg(res.data.tipo_organizacion || 'COLEGIO');
+        if (!selectedColegioId) {
+          setTipoOrg(res.data.tipo_organizacion || 'COLEGIO');
+          setNombreInst(res.data.nombre_institucion || nombreInst);
+        }
         setOrientacion(res.data.orientacion_predeterminada || 'HORIZONTAL');
         setColorPrimario(res.data.color_primario || '#1e3a8a');
         if (res.data.tipo_codigo) setTipoCodigo(res.data.tipo_codigo);
-        if (res.data.nombre_institucion) setNombreInst(res.data.nombre_institucion);
         if (res.data.subtitulo_carnet) setSubtitulo(res.data.subtitulo_carnet);
         if (res.data.fondo_url) setFondoUrl(res.data.fondo_url);
       }
@@ -99,23 +129,40 @@ export const StudentCardPrint = ({ estudiante }) => {
     }
   };
 
-  const fetchEstudiantesList = async () => {
+  const fetchEstudiantesList = async (colegioId) => {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) return;
-      const res = await axios.get(`${apiBaseUrl}/estudiantes`, {
+      const url = colegioId
+        ? `${apiBaseUrl}/estudiantes?colegio_id=${colegioId}`
+        : `${apiBaseUrl}/estudiantes`;
+      const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(res.data)) {
         setEstudiantesList(res.data);
-        if (res.data.length > 0 && !activeStudent) {
+        if (res.data.length > 0) {
           setActiveStudent(res.data[0]);
           setSelectedStudentId(res.data[0].id);
+        } else {
+          setActiveStudent(null);
+          setSelectedStudentId('');
         }
       }
     } catch (err) {
-      console.error('Error al cargar lista de estudiantes:', err);
+      console.error('Error al cargar lista de personas/estudiantes:', err);
     }
+  };
+
+  const handleColegioChange = (colegioId) => {
+    setSelectedColegioId(colegioId);
+    const col = colegiosList.find((c) => c.id === colegioId);
+    if (col) {
+      setActiveColegio(col);
+      setNombreInst(col.nombre);
+      setTipoOrg(col.tipo_organizacion || 'COLEGIO');
+    }
+    fetchEstudiantesList(colegioId);
   };
 
   const handleSelectStudent = (studentId) => {
@@ -160,12 +207,12 @@ export const StudentCardPrint = ({ estudiante }) => {
       );
       setSnackbar({
         open: true,
-        message: '¡Plantilla de Diseño e Imagen de Fondo guardadas en la Base de Datos!',
+        message: `¡Plantilla de Diseño guardada exitosamente para ${nombreInst}!`,
         severity: 'success',
       });
     } catch (err) {
       console.error('Error guardando diseño:', err);
-      setSnackbar({ open: true, message: 'Error al guardar el diseño', severity: 'error' });
+      setSnackbar({ open: true, message: 'Error al guardar la plantilla de diseño', severity: 'error' });
     }
   };
 
@@ -247,7 +294,42 @@ export const StudentCardPrint = ({ estudiante }) => {
 
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-      {/* Card de Estado del Plantel para la Administración de Carnetización */}
+      {/* Selector de Cliente / Empresa / Plantel para Impresión */}
+      {colegiosList.length > 0 && (
+        <Paper
+          className="no-print"
+          elevation={4}
+          sx={{
+            p: 2.5,
+            mb: 3,
+            width: '100%',
+            maxWidth: 950,
+            borderRadius: 3,
+            bgcolor: '#1e293b',
+            border: '1px solid #38bdf8',
+            color: '#ffffff',
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight="bold" color="#38bdf8" mb={1} display="flex" alignItems="center" gap={1}>
+            <BusinessIcon sx={{ fontSize: 22 }} /> Seleccionar Cliente / Empresa / Plantel Activo para Carnetización
+          </Typography>
+          <FormControl fullWidth size="small">
+            <Select
+              value={selectedColegioId}
+              onChange={(e) => handleColegioChange(e.target.value)}
+              sx={{ color: '#ffffff', bgcolor: '#0f172a', fieldset: { borderColor: '#475569' } }}
+            >
+              {colegiosList.map((col) => (
+                <MenuItem key={col.id} value={col.id}>
+                  🏢 {col.nombre} ({col.tipo_organizacion} — RIF: {col.rif_identificador || 'N/A'}) — {col.total_estudiantes} Personas Cargadas
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Paper>
+      )}
+
+      {/* Card de Estado del Plantel / Empresa para la Impresión */}
       {(() => {
         const porcentajeFotos = totalCargados > 0 ? Math.round((conFotoCount / totalCargados) * 100) : 0;
         return (
@@ -284,7 +366,8 @@ export const StudentCardPrint = ({ estudiante }) => {
                     {nombreInst}
                   </Typography>
                   <Typography variant="body2" color="#94a3b8">
-                    Estado de Información Institucional y Cola de Impresión Zebra ZXP Series 7
+                    {activeColegio?.rif_identificador ? `RIF: ${activeColegio.rif_identificador} | ` : ''}
+                    Cola de Impresión Zebra ZXP Series 7 ({tipoOrg})
                   </Typography>
                 </Box>
               </Box>
@@ -309,7 +392,7 @@ export const StudentCardPrint = ({ estudiante }) => {
             <Box sx={{ mb: 3, p: 2, bgcolor: 'rgba(15, 23, 42, 0.6)', borderRadius: 2, border: '1px solid #334155' }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <Typography variant="caption" color="#94a3b8" fontWeight="bold" display="flex" alignItems="center" gap={0.5}>
-                  <CameraAltIcon sx={{ fontSize: 16, color: '#38bdf8' }} /> Cobertura de Fotos para Carnetización
+                  <CameraAltIcon sx={{ fontSize: 16, color: '#38bdf8' }} /> Cobertura de Fotografías para Carnetización
                 </Typography>
                 <Typography variant="caption" color="#38bdf8" fontWeight="bold">
                   {porcentajeFotos}% Completado
@@ -414,7 +497,7 @@ export const StudentCardPrint = ({ estudiante }) => {
               </Grid>
             </Grid>
 
-            {/* Acciones del Padrón e Impresión Masiva */}
+            {/* Acciones de Consulta de Lista e Impresión Masiva */}
             <Box display="flex" gap={2} justifyContent="space-between" alignItems="center" flexWrap="wrap">
               <Button
                 variant="outlined"
@@ -423,7 +506,7 @@ export const StudentCardPrint = ({ estudiante }) => {
                 onClick={() => setOpenPadronModal(true)}
                 sx={{ borderRadius: 2, px: 2.5, fontWeight: 'bold' }}
               >
-                📋 Consultar Padrón de Estudiantes
+                📋 Consultar Listado de Personas
               </Button>
 
               <Button
@@ -490,15 +573,15 @@ export const StudentCardPrint = ({ estudiante }) => {
           </Button>
         </Box>
 
-        {/* Selector de Estudiante en Vivo */}
+        {/* Selector de Estudiante / Persona en Vivo */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, bgcolor: '#0f172a', borderRadius: 2, border: '1px solid #334155' }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={8}>
               <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: '#94a3b8' }}>Estudiante / Persona en Vista Previa</InputLabel>
+                <InputLabel sx={{ color: '#94a3b8' }}>Persona / Estudiante en Vista Previa</InputLabel>
                 <Select
                   value={selectedStudentId}
-                  label="Estudiante / Persona en Vista Previa"
+                  label="Persona / Estudiante en Vista Previa"
                   onChange={(e) => handleSelectStudent(e.target.value)}
                   sx={{ color: '#ffffff', fieldset: { borderColor: '#475569' } }}
                 >
@@ -519,7 +602,7 @@ export const StudentCardPrint = ({ estudiante }) => {
                 onClick={() => setOpenPadronModal(true)}
                 sx={{ py: 1 }}
               >
-                Buscar en Lista Padrón
+                Buscar en Lista Registrada
               </Button>
             </Grid>
           </Grid>
@@ -589,7 +672,7 @@ export const StudentCardPrint = ({ estudiante }) => {
             <TextField
               fullWidth
               size="small"
-              label="Nombre de la Institución"
+              label="Nombre de la Institución / Empresa"
               value={nombreInst}
               onChange={(e) => setNombreInst(e.target.value)}
               sx={{ input: { color: '#ffffff' }, label: { color: '#94a3b8' }, fieldset: { borderColor: '#475569' } }}
@@ -941,7 +1024,7 @@ export const StudentCardPrint = ({ estudiante }) => {
         )}
       </Box>
 
-      {/* Modal Dialog para Consultar Padrón de Estudiantes */}
+      {/* Modal Dialog para Consultar Lista de Personas Registradas */}
       <Dialog
         open={openPadronModal}
         onClose={() => setOpenPadronModal(false)}
@@ -953,7 +1036,7 @@ export const StudentCardPrint = ({ estudiante }) => {
           <Box display="flex" alignItems="center" gap={1.5}>
             <ContactPageIcon sx={{ color: '#38bdf8', fontSize: 28 }} />
             <Typography variant="h6" fontWeight="bold">
-              Padrón Completo de Estudiantes ({totalCargados})
+              Lista de Personas Registradas ({totalCargados}) — {nombreInst}
             </Typography>
           </Box>
           <Chip label={`${conFotoCount} con Foto`} color="success" size="small" />
@@ -962,7 +1045,7 @@ export const StudentCardPrint = ({ estudiante }) => {
           <TextField
             fullWidth
             size="small"
-            placeholder="Buscar estudiante por nombre, grado o código..."
+            placeholder="Buscar por nombre, grado o código..."
             value={searchPadron}
             onChange={(e) => setSearchPadron(e.target.value)}
             sx={{ mb: 2, input: { color: '#ffffff' }, fieldset: { borderColor: '#475569' } }}
@@ -980,7 +1063,7 @@ export const StudentCardPrint = ({ estudiante }) => {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ bgcolor: '#0f172a', color: '#94a3b8' }}>Foto</TableCell>
-                  <TableCell sx={{ bgcolor: '#0f172a', color: '#94a3b8' }}>Estudiante</TableCell>
+                  <TableCell sx={{ bgcolor: '#0f172a', color: '#94a3b8' }}>Persona / Estudiante</TableCell>
                   <TableCell sx={{ bgcolor: '#0f172a', color: '#94a3b8' }}>Grado / Sección</TableCell>
                   <TableCell sx={{ bgcolor: '#0f172a', color: '#94a3b8' }}>Código</TableCell>
                   <TableCell sx={{ bgcolor: '#0f172a', color: '#94a3b8' }}>Estado Foto</TableCell>

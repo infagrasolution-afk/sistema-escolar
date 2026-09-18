@@ -27,6 +27,7 @@ router = APIRouter()
 )
 async def get_estudiantes(
     search: Optional[str] = Query(None, description="Búsqueda por nombres, apellidos, código opaco o RFID"),
+    colegio_id: Optional[uuid.UUID] = Query(None, description="Filtrar por cliente u organización"),
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(
         require_role([
@@ -37,9 +38,14 @@ async def get_estudiantes(
     ),
 ) -> Any:
     """
-    Retorna la lista de estudiantes registrados con soporte de búsqueda por texto.
+    Retorna la lista de estudiantes registrados con soporte de búsqueda por texto y filtrado por cliente.
     """
     query = select(Estudiante).order_by(Estudiante.apellidos.asc(), Estudiante.nombres.asc())
+
+    if current_user.rol not in [RolUsuario.SUPER_ADMIN, RolUsuario.ADMIN_CARNET] and current_user.colegio_id:
+        query = query.where(Estudiante.colegio_id == current_user.colegio_id)
+    elif colegio_id:
+        query = query.where(Estudiante.colegio_id == colegio_id)
 
     if search:
         term = f"%{search}%"
