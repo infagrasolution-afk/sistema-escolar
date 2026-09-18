@@ -27,6 +27,17 @@ class BatchPdfRequest(BaseModel):
     tipo_codigo: Optional[str] = "AMBOS"
 
 
+class DummyEstudiante:
+    def __init__(self):
+        self.id = uuid.uuid4()
+        self.nombres = "CARLOS EDUARDO"
+        self.apellidos = "PÉREZ GÓMEZ"
+        self.grado_seccion = "5TO GRADO SECCIÓN A"
+        self.codigo_opaco = "EST-99887766"
+        self.foto_url = ""
+        self.activo = True
+
+
 @router.get(
     "/{estudiante_id}/pdf",
     response_class=StreamingResponse,
@@ -53,53 +64,59 @@ async def get_carnet_pdf(
     con reglas K-Resin para la impresora Zebra ZXP Series 7.
     """
     estudiante = None
-    try:
-        val_uuid = uuid.UUID(estudiante_id)
-        query = select(Estudiante).where(Estudiante.id == val_uuid)
-        result = await db.execute(query)
-        estudiante = result.scalar_one_or_none()
-    except ValueError:
-        query = select(Estudiante).where(Estudiante.codigo_opaco == estudiante_id)
-        result = await db.execute(query)
-        estudiante = result.scalar_one_or_none()
+    if estudiante_id and estudiante_id != "12345":
+        try:
+            val_uuid = uuid.UUID(estudiante_id)
+            query = select(Estudiante).where(Estudiante.id == val_uuid)
+            result = await db.execute(query)
+            estudiante = result.scalar_one_or_none()
+        except Exception:
+            pass
+
+        if not estudiante:
+            try:
+                query = select(Estudiante).where(Estudiante.codigo_opaco == estudiante_id)
+                result = await db.execute(query)
+                estudiante = result.scalar_one_or_none()
+            except Exception:
+                pass
 
     if not estudiante:
-        # Fallback a estudiante de muestra para previsualizaciones en vivo (p. ej. ID 12345)
-        estudiante = Estudiante(
-            id=uuid.uuid4(),
-            nombres="CARLOS EDUARDO",
-            apellidos="PÉREZ GÓMEZ",
-            grado_seccion="5TO GRADO SECCIÓN A",
-            codigo_opaco="EST-99887766",
-            foto_url="",
-            activo=True,
-        )
+        estudiante = DummyEstudiante()
 
     tipo_org = tipo_organizacion or _colegio_config_db.tipo_organizacion
     ori = orientacion or _colegio_config_db.orientacion_predeterminada
     color_p = color_primario or _colegio_config_db.color_primario
     t_codigo = tipo_codigo or _colegio_config_db.tipo_codigo
 
-    pdf_buffer = generar_pdf_carnets_batch(
-        estudiantes=[estudiante],
-        tipo_organizacion=tipo_org,
-        orientacion=ori,
-        color_primario_hex=color_p,
-        cara=cara,
-        nombre_institucion=_colegio_config_db.nombre_institucion,
-        subtitulo_carnet=_colegio_config_db.subtitulo_carnet,
-        ano_escolar=_colegio_config_db.ano_escolar,
-        poliza_seguro=_colegio_config_db.poliza_seguro,
-        tipo_codigo=t_codigo,
-    )
+    try:
+        pdf_buffer = generar_pdf_carnets_batch(
+            estudiantes=[estudiante],
+            tipo_organizacion=tipo_org,
+            orientacion=ori,
+            color_primario_hex=color_p,
+            cara=cara,
+            nombre_institucion=_colegio_config_db.nombre_institucion,
+            subtitulo_carnet=_colegio_config_db.subtitulo_carnet,
+            ano_escolar=_colegio_config_db.ano_escolar,
+            poliza_seguro=_colegio_config_db.poliza_seguro,
+            tipo_codigo=t_codigo,
+        )
 
-    return StreamingResponse(
-        pdf_buffer,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"inline; filename=carnet_{estudiante.codigo_opaco}.pdf"
-        },
-    )
+        codigo_opaco = getattr(estudiante, "codigo_opaco", "EST-99887766")
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename=carnet_{codigo_opaco}.pdf"
+            },
+        )
+    except Exception as e:
+        print(f"Error generando PDF carnet: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al generar el documento PDF: {str(e)}",
+        )
 
 
 @router.post(
