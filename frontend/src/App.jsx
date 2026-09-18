@@ -70,7 +70,7 @@ export const App = () => {
           <Route
             path="/usuarios"
             element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN_CARNET', 'ADMIN_ACCESO', 'SUPER_ADMIN']}>
                 <UserManagement />
               </ProtectedRoute>
             }

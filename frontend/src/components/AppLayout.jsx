@@ -82,7 +82,7 @@ export const AppLayout = () => {
       text: 'Usuarios y Permisos',
       icon: <ManageAccountsIcon />,
       path: '/usuarios',
-      roles: ['SUPER_ADMIN'],
+      roles: ['ADMIN_CARNET', 'ADMIN_ACCESO', 'SUPER_ADMIN'],
     },
     {
       text: 'Dashboard Owner',

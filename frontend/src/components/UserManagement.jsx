@@ -259,9 +259,12 @@ export const UserManagement = () => {
                 <InputLabel>Rol / Permiso Principal</InputLabel>
                 <Select value={rol} label="Rol / Permiso Principal" onChange={(e) => setRol(e.target.value)}>
                   <MenuItem value="OPERADOR_ESCANEO">OPERADOR_ESCANEO (Solo Garita / Kiosco)</MenuItem>
-                  <MenuItem value="ADMIN_CARNET">ADMIN_CARNET (Módulo de Carnets Zebra ZXP 7)</MenuItem>
-                  <MenuItem value="ADMIN_ACCESO">ADMIN_ACCESO (Administración General)</MenuItem>
-                  <MenuItem value="SUPER_ADMIN">SUPER_ADMIN (Dueño del Sistema)</MenuItem>
+                  <MenuItem value="OPERADOR_IMPRESION">OPERADOR_IMPRESION (Solo Impresión Carnets)</MenuItem>
+                  <MenuItem value="ADMIN_CARNET">ADMIN_CARNET (Administrador Carnetización)</MenuItem>
+                  <MenuItem value="ADMIN_ACCESO">ADMIN_ACCESO (Administración General Acceso)</MenuItem>
+                  {localStorage.getItem('user_role') === 'SUPER_ADMIN' && (
+                    <MenuItem value="SUPER_ADMIN">SUPER_ADMIN (Dueño del Sistema)</MenuItem>
+                  )}
                 </Select>
               </FormControl>
 
