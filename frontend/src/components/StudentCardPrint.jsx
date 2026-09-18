@@ -42,6 +42,7 @@ export const StudentCardPrint = ({ estudiante }) => {
   const [tipoCodigo, setTipoCodigo] = useState('AMBOS');
   const [nombreInst, setNombreInst] = useState('UNIDAD EDUCATIVA PRIVADA COLEGIO SAN AGUSTÍN');
   const [subtitulo, setSubtitulo] = useState('CARNET DE IDENTIFICACIÓN ESCOLAR');
+  const [fondoUrl, setFondoUrl] = useState('');
 
   // Estado del Plantel e Impresión por Lotes
   const [estudiantesList, setEstudiantesList] = useState([]);
@@ -65,6 +66,7 @@ export const StudentCardPrint = ({ estudiante }) => {
         if (res.data.tipo_codigo) setTipoCodigo(res.data.tipo_codigo);
         if (res.data.nombre_institucion) setNombreInst(res.data.nombre_institucion);
         if (res.data.subtitulo_carnet) setSubtitulo(res.data.subtitulo_carnet);
+        if (res.data.fondo_url) setFondoUrl(res.data.fondo_url);
       }
     } catch (err) {
       console.error('Error al obtener config institucional:', err);
@@ -516,7 +518,7 @@ export const StudentCardPrint = ({ estudiante }) => {
               overflow: 'hidden',
               borderRadius: '3.18mm',
               bgcolor: '#ffffff',
-              backgroundImage: colegioConfig?.fondo_url ? `url("${colegioConfig.fondo_url}")` : 'none',
+              backgroundImage: fondoUrl ? `url("${fondoUrl}")` : 'none',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
