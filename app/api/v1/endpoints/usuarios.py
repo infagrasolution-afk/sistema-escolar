@@ -50,9 +50,14 @@ def _build_user_response(u: Usuario) -> UsuarioResponse:
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[UsuarioResponse],
     summary="Listar usuarios asignados al cliente u organización",
+)
+@router.get(
+    "/",
+    response_model=List[UsuarioResponse],
+    include_in_schema=False,
 )
 async def get_usuarios(
     colegio_id: Optional[uuid.UUID] = None,
@@ -79,10 +84,16 @@ async def get_usuarios(
 
 
 @router.post(
-    "/",
+    "",
     response_model=UsuarioResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Crear nuevo usuario operador o administrador de cliente",
+)
+@router.post(
+    "/",
+    response_model=UsuarioResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 async def create_usuario(
     user_in: UsuarioCreate,

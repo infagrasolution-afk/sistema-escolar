@@ -22,9 +22,10 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
-# Configuración de Middleware CORS (Soporta credenciales HTTP-Only y orígenes de Render)
+# Configuración de Middleware CORS (Soporta credenciales HTTP-Only y cualquier origen de Render/local)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -34,7 +35,7 @@ app.add_middleware(
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ],
-    allow_origin_regex=r"https://.*\.onrender\.com",
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

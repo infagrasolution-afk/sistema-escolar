@@ -16,9 +16,14 @@ router = APIRouter()
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[EstudianteResponse],
     summary="Listar y buscar estudiantes",
+)
+@router.get(
+    "/",
+    response_model=List[EstudianteResponse],
+    include_in_schema=False,
 )
 async def get_estudiantes(
     search: Optional[str] = Query(None, description="Búsqueda por nombres, apellidos, código opaco o RFID"),
@@ -53,10 +58,16 @@ async def get_estudiantes(
 
 
 @router.post(
-    "/",
+    "",
     response_model=EstudianteResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo estudiante",
+)
+@router.post(
+    "/",
+    response_model=EstudianteResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 async def create_estudiante(
     estudiante_in: EstudianteCreate,

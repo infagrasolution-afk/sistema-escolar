@@ -31,6 +31,11 @@ _colegio_config_db = ColegioConfigBase()
     response_model=List[ColegioOut],
     summary="Listar todos los Clientes/Colegios (Exclusivo Super Admin)",
 )
+@router.get(
+    "/",
+    response_model=List[ColegioOut],
+    include_in_schema=False,
+)
 async def list_colegios(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(require_role([RolUsuario.SUPER_ADMIN])),
@@ -76,6 +81,12 @@ async def list_colegios(
     response_model=ColegioOut,
     status_code=status.HTTP_201_CREATED,
     summary="Crear un Nuevo Cliente / Plantel / Empresa (Exclusivo Super Admin)",
+)
+@router.post(
+    "/",
+    response_model=ColegioOut,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 async def create_colegio(
     colegio_in: ColegioCreate,

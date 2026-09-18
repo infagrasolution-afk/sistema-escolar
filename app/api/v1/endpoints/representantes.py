@@ -16,9 +16,14 @@ router = APIRouter()
 
 
 @router.get(
-    "/",
+    "",
     response_model=List[RepresentanteResponse],
     summary="Listar y buscar representantes",
+)
+@router.get(
+    "/",
+    response_model=List[RepresentanteResponse],
+    include_in_schema=False,
 )
 async def get_representantes(
     search: Optional[str] = Query(None, description="Búsqueda por nombres, apellidos, teléfono o telegram chat ID"),
@@ -51,10 +56,16 @@ async def get_representantes(
 
 
 @router.post(
-    "/",
+    "",
     response_model=RepresentanteResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo representante",
+)
+@router.post(
+    "/",
+    response_model=RepresentanteResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 async def create_representante(
     representante_in: RepresentanteCreate,
