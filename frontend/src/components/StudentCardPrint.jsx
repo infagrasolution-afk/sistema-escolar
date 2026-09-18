@@ -73,8 +73,17 @@ export const StudentCardPrint = ({ estudiante }) => {
   };
 
   const handleDownloadPdf = async () => {
+    const token = localStorage.getItem('access_token');
+    const params = new URLSearchParams({
+      tipo_organizacion: tipoOrg,
+      orientacion: orientacion,
+      color_primario: colorPrimario,
+      cara: cara,
+      tipo_codigo: tipoCodigo,
+      token: token || '',
+    });
+
     try {
-      const token = localStorage.getItem('access_token');
       const response = await axios.get(`${apiBaseUrl}/carnets/${data.id}/pdf`, {
         params: {
           tipo_organizacion: tipoOrg,
@@ -100,8 +109,9 @@ export const StudentCardPrint = ({ estudiante }) => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Error al descargar el PDF:', err);
-      alert('Error al descargar el PDF del carnet.');
+      console.warn('Axios blob request fallback to direct window open:', err);
+      // Fallback a apertura directa en pestaña usando el token de consulta
+      window.open(`${apiBaseUrl}/carnets/${data.id}/pdf?${params.toString()}`, '_blank');
     }
   };
 

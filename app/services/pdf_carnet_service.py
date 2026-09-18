@@ -14,6 +14,20 @@ from app.models.estudiante import Estudiante
 K_RESIN_PURE_BLACK = colors.HexColor("#000000")
 
 
+def _parse_color(hex_str: Optional[str], default_hex: str = "#1e3a8a") -> colors.HexColor:
+    if not hex_str:
+        return colors.HexColor(default_hex)
+    clean_hex = str(hex_str).strip()
+    if clean_hex.startswith("%23"):
+        clean_hex = "#" + clean_hex[3:]
+    elif not clean_hex.startswith("#"):
+        clean_hex = f"#{clean_hex}"
+    try:
+        return colors.HexColor(clean_hex)
+    except Exception:
+        return colors.HexColor(default_hex)
+
+
 def generar_pdf_carnets_batch(
     estudiantes: List[Estudiante],
     tipo_organizacion: str = "COLEGIO",
@@ -32,42 +46,42 @@ def generar_pdf_carnets_batch(
     con soporte para plantillas Colegio vs Cooperativa/Transporte, orientación Horizontal/Vertical,
     caras Frontal/Reverso y opción de código: BARRA, QR o AMBOS.
     """
-    is_vertical = orientacion.upper() == "VERTICAL"
+    is_vertical = (orientacion or "HORIZONTAL").upper() == "VERTICAL"
     width = 54.0 * mm if is_vertical else 85.6 * mm
     height = 85.6 * mm if is_vertical else 54.0 * mm
 
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=(width, height))
 
-    primary_color = colors.HexColor(color_primario_hex) if color_primario_hex else colors.HexColor("#1e3a8a")
+    primary_color = _parse_color(color_primario_hex, "#1e3a8a")
 
     for estudiante in estudiantes:
-        if cara.upper() in ["FRONTAL", "AMBAS"]:
+        if (cara or "FRONTAL").upper() in ["FRONTAL", "AMBAS"]:
             _dibujar_cara_frontal(
                 c=c,
                 estudiante=estudiante,
                 w=width,
                 h=height,
                 is_vertical=is_vertical,
-                tipo_org=tipo_organizacion,
+                tipo_org=tipo_organizacion or "COLEGIO",
                 primary_color=primary_color,
-                nombre_inst=nombre_institucion,
-                subtitulo=subtitulo_carnet,
-                ano_escolar=ano_escolar,
-                tipo_codigo=tipo_codigo,
+                nombre_inst=nombre_institucion or "UNIDAD EDUCATIVA",
+                subtitulo=subtitulo_carnet or "CARNET DE IDENTIFICACIÓN",
+                ano_escolar=ano_escolar or "2025-2026",
+                tipo_codigo=tipo_codigo or "AMBOS",
             )
             c.showPage()
 
-        if cara.upper() in ["REVERSO", "AMBAS"]:
+        if (cara or "FRONTAL").upper() in ["REVERSO", "AMBAS"]:
             _dibujar_cara_reverso(
                 c=c,
                 estudiante=estudiante,
                 w=width,
                 h=height,
                 is_vertical=is_vertical,
-                tipo_org=tipo_organizacion,
+                tipo_org=tipo_organizacion or "COLEGIO",
                 primary_color=primary_color,
-                nombre_inst=nombre_institucion,
+                nombre_inst=nombre_institucion or "UNIDAD EDUCATIVA",
                 poliza_seguro=poliza_seguro,
             )
             c.showPage()
@@ -102,14 +116,19 @@ def _dibujar_cara_frontal(
     # Texto Encabezado
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 7.5 if is_vertical else 7.0)
-    c.drawCentredString(w / 2.0, h - 4.5 * mm, nombre_inst[:38].upper())
+    c.drawCentredString(w / 2.0, h - 4.5 * mm, (nombre_inst or "")[:38].upper())
     c.setFont("Helvetica", 5.5)
-    c.drawCentredString(w / 2.0, h - 8.5 * mm, subtitulo.upper())
+    c.drawCentredString(w / 2.0, h - 8.5 * mm, (subtitulo or "").upper())
     if is_vertical:
-        c.drawCentredString(w / 2.0, h - 11.5 * mm, f"PERÍODO: {ano_escolar}")
+        c.drawCentredString(w / 2.0, h - 11.5 * mm, f"PERÍODO: {ano_escolar or ''}")
 
-    is_cooperativa = "COOPERATIVA" in tipo_org.upper() or "TRANSPORTE" in tipo_org.upper()
-    codigo_mode = tipo_codigo.upper()
+    is_cooperativa = "COOPERATIVA" in (tipo_org or "").upper() or "TRANSPORTE" in (tipo_org or "").upper()
+    codigo_mode = (tipo_codigo or "AMBOS").upper()
+
+    est_nombres = (estudiante.nombres or "")[:22]
+    est_apellidos = (estudiante.apellidos or "")[:22]
+    est_grado = (estudiante.grado_seccion or "")[:30]
+    est_codigo = estudiante.codigo_opaco or "EST-00000000"
 
     if is_vertical:
         # Layout Vertical
@@ -139,19 +158,19 @@ def _dibujar_cara_frontal(
         # Datos Nombre y Grado
         c.setFillColor(K_RESIN_PURE_BLACK)
         c.setFont("Helvetica-Bold", 8)
-        c.drawCentredString(w / 2.0, role_band_y - 4.0 * mm, f"{estudiante.nombres[:22]}")
-        c.drawCentredString(w / 2.0, role_band_y - 7.5 * mm, f"{estudiante.apellidos[:22]}")
+        c.drawCentredString(w / 2.0, role_band_y - 4.0 * mm, est_nombres)
+        c.drawCentredString(w / 2.0, role_band_y - 7.5 * mm, est_apellidos)
 
         c.setFont("Helvetica", 6.5)
         c.setFillColor(K_RESIN_PURE_BLACK)
         label_det = "UNIDAD / RUTA:" if is_cooperativa else "GRADO / SECCIÓN:"
-        c.drawCentredString(w / 2.0, role_band_y - 11.5 * mm, f"{label_det} {estudiante.grado_seccion}")
+        c.drawCentredString(w / 2.0, role_band_y - 11.5 * mm, f"{label_det} {est_grado}")
 
         # Render de Código (BARRA, QR o AMBOS)
         if codigo_mode == "QR":
-            _dibujar_qr(c, estudiante.codigo_opaco, (w - 14.0 * mm) / 2.0, 3.0 * mm, size=14.0 * mm)
+            _dibujar_qr(c, est_codigo, (w - 14.0 * mm) / 2.0, 3.0 * mm, size=14.0 * mm)
         else:
-            _dibujar_codigo_barras(c, estudiante.codigo_opaco, w / 2.0, 3.0 * mm, bar_h=7.0 * mm)
+            _dibujar_codigo_barras(c, est_codigo, w / 2.0, 3.0 * mm, bar_h=7.0 * mm)
 
     else:
         # Layout Horizontal
@@ -182,28 +201,28 @@ def _dibujar_cara_frontal(
 
         c.setFillColor(K_RESIN_PURE_BLACK)
         c.setFont("Helvetica-Bold", 8)
-        c.drawString(info_x, start_y, f"{estudiante.nombres[:22]}")
-        c.drawString(info_x, start_y - 3.5 * mm, f"{estudiante.apellidos[:22]}")
+        c.drawString(info_x, start_y, est_nombres)
+        c.drawString(info_x, start_y - 3.5 * mm, est_apellidos)
 
         label_det = "UNIDAD / RUTA:" if is_cooperativa else "GRADO / SECCIÓN:"
         c.setFont("Helvetica", 6)
         c.drawString(info_x, start_y - 7.5 * mm, label_det)
         c.setFont("Helvetica-Bold", 7)
-        c.drawString(info_x, start_y - 11.0 * mm, f"{estudiante.grado_seccion}")
+        c.drawString(info_x, start_y - 11.0 * mm, est_grado)
 
         c.setFont("Helvetica", 6)
         c.drawString(info_x, start_y - 14.5 * mm, "CÓDIGO ID:")
         c.setFont("Helvetica-Bold", 6.5)
-        c.drawString(info_x + 13.0 * mm, start_y - 14.5 * mm, f"{estudiante.codigo_opaco}")
+        c.drawString(info_x + 13.0 * mm, start_y - 14.5 * mm, est_codigo)
 
         # Render de Código según preferencia
         if codigo_mode == "BARRA":
-            _dibujar_codigo_barras(c, estudiante.codigo_opaco, (w + info_x) / 2.0 - 5.0 * mm, 2.0 * mm, bar_h=9.0 * mm)
+            _dibujar_codigo_barras(c, est_codigo, (w + info_x) / 2.0 - 5.0 * mm, 2.0 * mm, bar_h=9.0 * mm)
         elif codigo_mode == "QR":
-            _dibujar_qr(c, estudiante.codigo_opaco, w - 20.0 * mm, 3.0 * mm, size=18.0 * mm)
+            _dibujar_qr(c, est_codigo, w - 20.0 * mm, 3.0 * mm, size=18.0 * mm)
         else:  # AMBOS
-            _dibujar_codigo_barras(c, estudiante.codigo_opaco, 32.0 * mm, 2.0 * mm, bar_h=8.0 * mm)
-            _dibujar_qr(c, estudiante.codigo_opaco, w - 14.0 * mm, 12.0 * mm, size=12.0 * mm)
+            _dibujar_codigo_barras(c, est_codigo, 32.0 * mm, 2.0 * mm, bar_h=8.0 * mm)
+            _dibujar_qr(c, est_codigo, w - 14.0 * mm, 12.0 * mm, size=12.0 * mm)
 
 
 def _dibujar_cara_reverso(
@@ -232,6 +251,9 @@ def _dibujar_cara_reverso(
     c.setFillColor(K_RESIN_PURE_BLACK)
     c.setFont("Helvetica", 5)
 
+    est_codigo = estudiante.codigo_opaco or "EST-00000000"
+    poliza_str = poliza_seguro or ""
+
     if is_vertical:
         lines = [
             "1. Este carnet es personal e intransferible.",
@@ -244,9 +266,9 @@ def _dibujar_cara_reverso(
             c.drawString(4.0 * mm, curr_y, line)
             curr_y -= 3.2 * mm
 
-        if poliza_seguro:
+        if poliza_str:
             c.setFont("Helvetica-Bold", 5)
-            c.drawString(4.0 * mm, curr_y - 1.0 * mm, f"PÓLIZA DE SEGURO: {poliza_seguro[:30]}")
+            c.drawString(4.0 * mm, curr_y - 1.0 * mm, f"PÓLIZA DE SEGURO: {poliza_str[:30]}")
             curr_y -= 4.0 * mm
 
         # Cuadro Firma / Sello
@@ -257,7 +279,7 @@ def _dibujar_cara_reverso(
         c.drawCentredString(w / 2.0, 13.0 * mm, "SELLO Y FIRMA AUTORIZADA")
 
         # QR Reverso
-        _dibujar_qr(c, estudiante.codigo_opaco, (w - 8.0 * mm) / 2.0, 3.0 * mm, size=8.0 * mm)
+        _dibujar_qr(c, est_codigo, (w - 8.0 * mm) / 2.0, 3.0 * mm, size=8.0 * mm)
 
     else:
         lines = [
@@ -270,9 +292,9 @@ def _dibujar_cara_reverso(
             c.drawString(4.0 * mm, curr_y, line)
             curr_y -= 3.0 * mm
 
-        if poliza_seguro:
+        if poliza_str:
             c.setFont("Helvetica-Bold", 5)
-            c.drawString(4.0 * mm, curr_y - 1.0 * mm, f"PÓLIZA: {poliza_seguro[:45]}")
+            c.drawString(4.0 * mm, curr_y - 1.0 * mm, f"PÓLIZA: {poliza_str[:45]}")
 
         # Cuadro Firma y Sello
         c.setStrokeColor(K_RESIN_PURE_BLACK)
@@ -282,7 +304,7 @@ def _dibujar_cara_reverso(
         c.drawCentredString(w - 18.0 * mm, 5.0 * mm, "FIRMA / SELLO")
 
         # QR Reverso
-        _dibujar_qr(c, estudiante.codigo_opaco, 4.0 * mm, 4.0 * mm, size=14.0 * mm)
+        _dibujar_qr(c, est_codigo, 4.0 * mm, 4.0 * mm, size=14.0 * mm)
 
 
 def _dibujar_codigo_barras(c: canvas.Canvas, value: str, center_x: float, y: float, bar_h: float) -> None:
