@@ -27,6 +27,7 @@ import {
   Alert,
   Snackbar,
   InputAdornment,
+  CircularProgress,
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -44,6 +45,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import FormatPaintIcon from '@mui/icons-material/FormatPaint';
 import ContactPageIcon from '@mui/icons-material/ContactPage';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -76,11 +79,119 @@ export const StudentCardPrint = ({ estudiante }) => {
   const [openPadronModal, setOpenPadronModal] = useState(false);
   const [searchPadron, setSearchPadron] = useState('');
 
+  // Modal y Formulario de Registro Rápido de Persona
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [newNombres, setNewNombres] = useState('');
+  const [newApellidos, setNewApellidos] = useState('');
+  const [newGradoSeccion, setNewGradoSeccion] = useState('');
+  const [newCodigoOpaco, setNewCodigoOpaco] = useState('');
+  const [newRfidUid, setNewRfidUid] = useState('');
+  const [newFotoUrl, setNewFotoUrl] = useState('');
+  const [savingPerson, setSavingPerson] = useState(false);
+
+  // Cámara web para captura de foto
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const videoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+
   // Feedback de Snackbar
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const navigate = useNavigate();
   const apiBaseUrl = API_BASE_URL;
+
+  const startCamera = async () => {
+    setIsCameraActive(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
+      });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Error al acceder a la cámara:', err);
+      alert('No se pudo acceder a la cámara. Verifique los permisos en el navegador.');
+      setIsCameraActive(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 400;
+      canvas.height = video.videoHeight || 400;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      setNewFotoUrl(dataUrl);
+      stopCamera();
+    }
+  };
+
+  const handleOpenCreateModal = () => {
+    stopCamera();
+    setNewNombres('');
+    setNewApellidos('');
+    setNewGradoSeccion('');
+    setNewCodigoOpaco('');
+    setNewRfidUid('');
+    setNewFotoUrl('');
+    setOpenCreateModal(true);
+  };
+
+  const handleSaveNewPerson = async () => {
+    if (!newNombres.trim() || !newApellidos.trim()) {
+      setSnackbar({ open: true, message: 'Por favor ingrese Nombres y Apellidos', severity: 'warning' });
+      return;
+    }
+    setSavingPerson(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const payload = {
+        nombres: newNombres.trim(),
+        apellidos: newApellidos.trim(),
+        grado_seccion: newGradoSeccion.trim() || (tipoOrg === 'COOPERATIVA_TRANSPORTE' ? 'Conductor / Socio' : 'General'),
+        codigo_opaco: newCodigoOpaco.trim() || undefined,
+        rfid_uid: newRfidUid.trim() || undefined,
+        foto_url: newFotoUrl || null,
+        colegio_id: selectedColegioId || undefined,
+      };
+
+      const res = await axios.post(`${apiBaseUrl}/estudiantes`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      stopCamera();
+      setOpenCreateModal(false);
+      setSnackbar({
+        open: true,
+        message: `¡${res.data.nombres} ${res.data.apellidos} registrado/a y seleccionado/a para carnetización!`,
+        severity: 'success',
+      });
+
+      // Recargar lista y seleccionar automáticamente
+      await fetchEstudiantesList(selectedColegioId);
+      setActiveStudent(res.data);
+      setSelectedStudentId(res.data.id);
+    } catch (err) {
+      console.error('Error al registrar persona:', err);
+      const detail = err.response?.data?.detail || 'Error al guardar el registro';
+      setSnackbar({ open: true, message: detail, severity: 'error' });
+    } finally {
+      setSavingPerson(false);
+    }
+  };
 
   useEffect(() => {
     fetchColegiosList();
@@ -508,17 +619,29 @@ export const StudentCardPrint = ({ estudiante }) => {
               </Grid>
             </Grid>
 
-            {/* Acciones de Consulta de Lista e Impresión Masiva */}
+            {/* Acciones de Consulta de Lista, Registro Rápido e Impresión Masiva */}
             <Box display="flex" gap={2} justifyContent="space-between" alignItems="center" flexWrap="wrap">
-              <Button
-                variant="outlined"
-                color="info"
-                startIcon={<ContactPageIcon />}
-                onClick={() => setOpenPadronModal(true)}
-                sx={{ borderRadius: 2, px: 2.5, fontWeight: 'bold' }}
-              >
-                📋 Consultar Listado de Personas
-              </Button>
+              <Box display="flex" gap={1.5} flexWrap="wrap">
+                <Button
+                  variant="contained"
+                  color="info"
+                  startIcon={<PersonAddIcon />}
+                  onClick={handleOpenCreateModal}
+                  sx={{ borderRadius: 2, px: 2.5, fontWeight: 'bold' }}
+                >
+                  ➕ Registrar Persona / Estudiante
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="info"
+                  startIcon={<ContactPageIcon />}
+                  onClick={() => setOpenPadronModal(true)}
+                  sx={{ borderRadius: 2, px: 2.5, fontWeight: 'bold' }}
+                >
+                  📋 Consultar Listado
+                </Button>
+              </Box>
 
               <Button
                 variant="contained"
@@ -785,7 +908,7 @@ export const StudentCardPrint = ({ estudiante }) => {
         </Grid>
       </Paper>
 
-      {/* Reglas CSS @media print */}
+      {/* Reglas CSS @media print para Aislamiento Total de Tarjeta CR-80 */}
       <style>{`
         @media print {
           @page {
@@ -793,19 +916,29 @@ export const StudentCardPrint = ({ estudiante }) => {
             margin: 0;
           }
           body {
-            margin: 0;
-            padding: 0;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
           }
-          .no-print {
-            display: none !important;
+          body * {
+            visibility: hidden !important;
+          }
+          .cr80-card-wrapper, .cr80-card-wrapper * {
+            visibility: visible !important;
           }
           .cr80-card-wrapper {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .no-print, header, nav, footer, .MuiDialog-root {
+            display: none !important;
           }
         }
       `}</style>
@@ -1124,6 +1257,186 @@ export const StudentCardPrint = ({ estudiante }) => {
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setOpenPadronModal(false)} variant="outlined" color="inherit">
             Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal Dialog para Registrar Nueva Persona / Estudiante Directamente en Carnetización */}
+      <Dialog
+        open={openCreateModal}
+        onClose={() => { stopCamera(); setOpenCreateModal(false); }}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { bgcolor: '#1e293b', color: '#ffffff', borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <PersonAddIcon sx={{ color: '#38bdf8', fontSize: 28 }} />
+          <Typography variant="h6" fontWeight="bold">
+            Registrar Persona / Estudiante — {nombreInst}
+          </Typography>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ borderColor: '#334155', py: 3 }}>
+          <Grid container spacing={2.5}>
+            {/* Sección de Foto / Cámara */}
+            <Grid item xs={12} md={4} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+              <Paper
+                elevation={3}
+                sx={{
+                  width: 140,
+                  height: 160,
+                  bgcolor: '#0f172a',
+                  border: '2px dashed #38bdf8',
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  mb: 1.5,
+                }}
+              >
+                {isCameraActive ? (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : newFotoUrl ? (
+                  <img src={newFotoUrl} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <Typography variant="caption" color="#94a3b8" textAlign="center" p={1}>
+                    Sin Fotografía
+                  </Typography>
+                )}
+              </Paper>
+
+              {isCameraActive ? (
+                <Box display="flex" gap={1}>
+                  <Button variant="contained" color="success" size="small" onClick={capturePhoto}>
+                    📸 Capturar
+                  </Button>
+                  <Button variant="outlined" color="error" size="small" onClick={stopCamera}>
+                    Cancelar
+                  </Button>
+                </Box>
+              ) : (
+                <Box display="flex" gap={1} flexWrap="wrap" justifyContent="center">
+                  <Button
+                    variant="outlined"
+                    color="info"
+                    size="small"
+                    startIcon={<PhotoCameraIcon />}
+                    onClick={startCamera}
+                  >
+                    Tomar Foto
+                  </Button>
+
+                  <Button variant="outlined" color="secondary" size="small" component="label" startIcon={<UploadFileIcon />}>
+                    Subir Foto
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setNewFotoUrl(reader.result);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </Button>
+                </Box>
+              )}
+            </Grid>
+
+            {/* Campos del Formulario */}
+            <Grid item xs={12} md={8}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    size="small"
+                    label="Nombres"
+                    value={newNombres}
+                    onChange={(e) => setNewNombres(e.target.value)}
+                    sx={{ input: { color: '#ffffff' }, label: { color: '#94a3b8' }, fieldset: { borderColor: '#475569' } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    size="small"
+                    label="Apellidos"
+                    value={newApellidos}
+                    onChange={(e) => setNewApellidos(e.target.value)}
+                    sx={{ input: { color: '#ffffff' }, label: { color: '#94a3b8' }, fieldset: { borderColor: '#475569' } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label={tipoOrg === 'COOPERATIVA_TRANSPORTE' ? 'Cargo / Rol / Unidad' : 'Grado / Sección / Depto'}
+                    placeholder={tipoOrg === 'COOPERATIVA_TRANSPORTE' ? 'Ej: Conductor - Unidad 04' : 'Ej: 5to Grado A'}
+                    value={newGradoSeccion}
+                    onChange={(e) => setNewGradoSeccion(e.target.value)}
+                    sx={{ input: { color: '#ffffff' }, label: { color: '#94a3b8' }, fieldset: { borderColor: '#475569' } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Cédula / Código Opaco (Opcional)"
+                    placeholder="Se auto-genera si queda vacío"
+                    value={newCodigoOpaco}
+                    onChange={(e) => setNewCodigoOpaco(e.target.value)}
+                    sx={{ input: { color: '#ffffff' }, label: { color: '#94a3b8' }, fieldset: { borderColor: '#475569' } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Código de Tarjeta RFID (Opcional)"
+                    placeholder="Ej: RFID-887766"
+                    value={newRfidUid}
+                    onChange={(e) => setNewRfidUid(e.target.value)}
+                    sx={{ input: { color: '#ffffff' }, label: { color: '#94a3b8' }, fieldset: { borderColor: '#475569' } }}
+                  />
+                </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, borderTop: '1px solid #334155' }}>
+          <Button
+            onClick={() => { stopCamera(); setOpenCreateModal(false); }}
+            variant="outlined"
+            color="inherit"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSaveNewPerson}
+            variant="contained"
+            color="primary"
+            disabled={savingPerson}
+            startIcon={savingPerson ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+            sx={{ fontWeight: 'bold' }}
+          >
+            {savingPerson ? 'Guardando...' : 'Guardar y Carnetizar'}
           </Button>
         </DialogActions>
       </Dialog>

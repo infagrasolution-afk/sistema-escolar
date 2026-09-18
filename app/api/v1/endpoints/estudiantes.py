@@ -90,9 +90,7 @@ async def create_estudiante(
     Registra un nuevo estudiante en la institución.
     Si no se especifica código opaco, se genera uno automático secuencial.
     """
-    codigo_final = estudiante_in.codigo_opaco
-    if not codigo_final:
-        codigo_final = f"EST-2026-{uuid.uuid4().hex[:6].upper()}"
+    codigo_final = estudiante_in.codigo_opaco.strip() if estudiante_in.codigo_opaco else f"EST-2026-{uuid.uuid4().hex[:6].upper()}"
 
     # Validar duplicados de código opaco o rfid
     query_check = select(Estudiante).where(
@@ -105,16 +103,19 @@ async def create_estudiante(
     if res_check.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ya existe un estudiante registrado con ese Código Opaco o Tarjeta RFID",
+            detail="Ya existe una persona registrada con ese Código o Tarjeta RFID",
         )
 
+    target_colegio_id = estudiante_in.colegio_id or (current_user.colegio_id if current_user else None)
+
     db_estudiante = Estudiante(
+        colegio_id=target_colegio_id,
         codigo_opaco=codigo_final,
-        nombres=estudiante_in.nombres,
-        apellidos=estudiante_in.apellidos,
-        grado_seccion=estudiante_in.grado_seccion,
+        nombres=estudiante_in.nombres.strip(),
+        apellidos=estudiante_in.apellidos.strip(),
+        grado_seccion=estudiante_in.grado_seccion.strip(),
         foto_url=estudiante_in.foto_url,
-        rfid_uid=estudiante_in.rfid_uid,
+        rfid_uid=estudiante_in.rfid_uid.strip() if estudiante_in.rfid_uid else None,
         representante_id=estudiante_in.representante_id,
     )
     db.add(db_estudiante)

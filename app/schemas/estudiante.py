@@ -8,12 +8,13 @@ from app.schemas.representante import RepresentanteResponse
 
 
 class EstudianteBase(BaseModel):
-    codigo_opaco: str = Field(..., min_length=4, max_length=64)
+    codigo_opaco: Optional[str] = Field(None, max_length=64)
     nombres: str = Field(..., min_length=2, max_length=100)
     apellidos: str = Field(..., min_length=2, max_length=100)
     grado_seccion: str = Field(..., max_length=50)
     foto_url: Optional[str] = None
     rfid_uid: Optional[str] = Field(None, max_length=64)
+    colegio_id: Optional[UUID] = None
     representante_id: Optional[UUID] = None
 
 
