@@ -101,6 +101,7 @@ async def get_carnet_pdf(
             ano_escolar=_colegio_config_db.ano_escolar,
             poliza_seguro=_colegio_config_db.poliza_seguro,
             tipo_codigo=t_codigo,
+            fondo_url=getattr(_colegio_config_db, "fondo_url", None),
         )
 
         codigo_opaco = getattr(estudiante, "codigo_opaco", "EST-99887766")
@@ -172,6 +173,7 @@ async def get_carnets_batch_pdf(
         ano_escolar=_colegio_config_db.ano_escolar,
         poliza_seguro=_colegio_config_db.poliza_seguro,
         tipo_codigo=t_codigo,
+        fondo_url=getattr(_colegio_config_db, "fondo_url", None),
     )
 
     return StreamingResponse(

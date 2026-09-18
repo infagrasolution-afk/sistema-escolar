@@ -12,6 +12,7 @@ class ColegioConfigBase(BaseModel):
     logo_url: Optional[str] = None
     sello_url: Optional[str] = None
     firma_url: Optional[str] = None
+    fondo_url: Optional[str] = None
     poliza_seguro: Optional[str] = Field("APES - 002001-38 - Oceánica de Seguros", max_length=150)
     color_primario: str = Field("#1e8a6f", max_length=20)
     color_secundario: str = Field("#0f172a", max_length=20)

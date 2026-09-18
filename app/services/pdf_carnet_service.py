@@ -40,11 +40,12 @@ def generar_pdf_carnets_batch(
     ano_escolar: str = "2025-2026",
     poliza_seguro: Optional[str] = "APES - 002001-38 - Oceánica de Seguros",
     tipo_codigo: str = "AMBOS",
+    fondo_url: Optional[str] = None,
 ) -> BytesIO:
     """
     Genera un documento PDF multipágina con dimensiones CR-80 (85.6mm x 54.0mm)
     con soporte para plantillas Colegio vs Cooperativa/Transporte, orientación Horizontal/Vertical,
-    caras Frontal/Reverso y opción de código: BARRA, QR o AMBOS.
+    caras Frontal/Reverso, imagen de fondo y opción de código: BARRA, QR o AMBOS.
     """
     is_vertical = (orientacion or "HORIZONTAL").upper() == "VERTICAL"
     width = 54.0 * mm if is_vertical else 85.6 * mm
@@ -69,6 +70,7 @@ def generar_pdf_carnets_batch(
                 subtitulo=subtitulo_carnet or "CARNET DE IDENTIFICACIÓN",
                 ano_escolar=ano_escolar or "2025-2026",
                 tipo_codigo=tipo_codigo or "AMBOS",
+                fondo_url=fondo_url,
             )
             c.showPage()
 
@@ -103,10 +105,26 @@ def _dibujar_cara_frontal(
     subtitulo: str,
     ano_escolar: str,
     tipo_codigo: str = "AMBOS",
+    fondo_url: Optional[str] = None,
 ) -> None:
     # 1. Fondo Blanco Base
     c.setFillColor(colors.white)
     c.rect(0, 0, w, h, fill=1, stroke=0)
+
+    # 1.5 Dibujar Imagen de Fondo personalizada si está configurada
+    if fondo_url:
+        try:
+            if str(fondo_url).startswith("data:image"):
+                import base64
+                from io import BytesIO
+                header, data_str = str(fondo_url).split(",", 1)
+                img_data = base64.b64decode(data_str)
+                img_reader = ImageReader(BytesIO(img_data))
+            else:
+                img_reader = ImageReader(str(fondo_url))
+            c.drawImage(img_reader, 0, 0, width=w, height=h)
+        except Exception:
+            pass
 
     # 2. Encabezado Institucional
     header_h = 14.0 * mm if is_vertical else 11.0 * mm
