@@ -16,7 +16,7 @@ import {
   Button,
   IconButton,
 } from '@mui/material';
-import PeopleIcon from '@mui/icons-[#10b981]' || '@mui/icons-material/People';
+import PeopleIcon from '@mui/icons-material/People';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import SendIcon from '@mui/icons-material/Send';
@@ -222,7 +222,7 @@ export const OwnerDashboard = () => {
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Estudiante</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Detalles / Resultado</TableCell>
                     </TableRow>
-                  </Head>
+                  </TableHead>
                   <TableBody>
                     {auditLogs.length > 0 ? (
                       auditLogs.map((log) => (
