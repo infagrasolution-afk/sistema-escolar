@@ -139,6 +139,8 @@ export const RepresentativeManagement = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
           }}
         >
           <Box display="flex" alignItems="center" gap={2}>

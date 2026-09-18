@@ -218,6 +218,8 @@ export const StudentManagement = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
           }}
         >
           <Box display="flex" alignItems="center" gap={2}>
