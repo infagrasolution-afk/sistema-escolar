@@ -59,7 +59,13 @@ export const LoginView = () => {
         navigate('/estudiantes');
       }
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Credenciales inválidas o error de servidor';
+      const detail = err.response?.data?.detail;
+      let msg = 'Credenciales inválidas o error de servidor';
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map((d) => d.msg || JSON.stringify(d)).join(', ');
+      }
       setError(msg);
     } finally {
       setLoading(false);

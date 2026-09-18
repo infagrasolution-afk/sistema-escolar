@@ -3,7 +3,8 @@ from pydantic import BaseModel
 
 
 class LoginRequest(BaseModel):
-    email: str  # Permite tanto nombre de usuario (ej: linfante) como correo electrónico
+    username: Optional[str] = None
+    email: Optional[str] = None
     password: str
 
 

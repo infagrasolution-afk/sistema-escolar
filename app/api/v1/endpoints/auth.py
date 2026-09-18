@@ -27,31 +27,36 @@ async def login(
     request: Request,
     db: AsyncSession = Depends(get_db),
     login_data: Optional[LoginRequest] = None,
-    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
     Endpoint de Autenticación de Usuarios.
-    Soporta Payload JSON (LoginRequest) o Form-Data (OAuth2PasswordRequestForm).
+    Soporta Payload JSON (LoginRequest) o Form-Data.
     Entrega un access_token (15 min) en respuesta y un refresh_token (7 días) en Cookie HTTP-Only.
     """
-    email = None
+    username_or_email = None
     password = None
 
     if login_data:
-        email = login_data.email
+        username_or_email = login_data.username or login_data.email
         password = login_data.password
-    elif form_data and form_data.username:
-        email = form_data.username
-        password = form_data.password
 
-    if not email or not password:
+    # Si no se recibió JSON, intentar extraer Form-Data
+    if not username_or_email or not password:
+        try:
+            form = await request.form()
+            username_or_email = form.get("username") or form.get("email")
+            password = form.get("password")
+        except Exception:
+            pass
+
+    if not username_or_email or not password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Debe proporcionar email y contraseña para autenticarse",
+            detail="Debe proporcionar usuario y contraseña para autenticarse",
         )
 
-    # Buscar usuario en la base de datos
-    query = select(Usuario).where(Usuario.email == email)
+    # Buscar usuario por nombre de usuario o email en la base de datos
+    query = select(Usuario).where(Usuario.email == username_or_email)
     result = await db.execute(query)
     user = result.scalar_one_or_none()
 
