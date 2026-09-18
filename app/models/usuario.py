@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 import uuid
 
-from sqlalchemy import Boolean, DateTime, Enum, String, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,6 +11,7 @@ from app.models.enums import RolUsuario
 
 if TYPE_CHECKING:
     from app.models.asistencia import Asistencia
+    from app.models.colegio import Colegio
 
 
 class Usuario(Base):
@@ -37,6 +38,12 @@ class Usuario(Base):
         nullable=False,
         index=True,
     )
+    colegio_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("colegios.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     activo: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
@@ -50,8 +57,14 @@ class Usuario(Base):
     )
 
     # Relaciones
+    colegio: Mapped[Optional["Colegio"]] = relationship(
+        "Colegio",
+        back_populates="usuarios",
+        lazy="selectin",
+    )
     asistencias: Mapped[List["Asistencia"]] = relationship(
         "Asistencia",
         back_populates="operador",
         lazy="selectin",
     )
+

@@ -15,6 +15,13 @@ import {
   CircularProgress,
   Button,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Alert,
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
@@ -22,6 +29,8 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import SendIcon from '@mui/icons-material/Send';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import AddBusinessIcon from '@mui/icons-material/AddBusiness';
+import BusinessIcon from '@mui/icons-material/Business';
 import axios from 'axios';
 
 import API_BASE_URL from '../apiConfig';
@@ -29,7 +38,24 @@ import API_BASE_URL from '../apiConfig';
 export const OwnerDashboard = () => {
   const [metrics, setMetrics] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [colegios, setColegios] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal estado para crear cliente
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const [formData, setFormData] = useState({
+    nombre: '',
+    tipo_organizacion: 'COLEGIO',
+    rif_identificador: '',
+    color_primario: '#1e8a6f',
+    color_secundario: '#0f172a',
+    admin_email: '',
+    admin_password: '',
+  });
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -37,13 +63,15 @@ export const OwnerDashboard = () => {
       const token = localStorage.getItem('access_token');
       const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
-      const [resMetrics, resLogs] = await Promise.all([
+      const [resMetrics, resLogs, resColegios] = await Promise.all([
         axios.get(`${API_BASE_URL}/dashboard/metrics`, authHeader),
         axios.get(`${API_BASE_URL}/dashboard/audit-logs`, authHeader),
+        axios.get(`${API_BASE_URL}/colegios`, authHeader).catch(() => ({ data: [] })),
       ]);
 
       setMetrics(resMetrics.data);
       setAuditLogs(resLogs.data);
+      setColegios(resColegios.data || []);
     } catch (err) {
       console.error('Error cargando métricas de owner:', err);
     } finally {
@@ -54,6 +82,47 @@ export const OwnerDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateClient = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await axios.post(`${API_BASE_URL}/colegios`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setSuccessMessage(`¡Cliente "${response.data.nombre}" creado exitosamente!`);
+      setFormData({
+        nombre: '',
+        tipo_organizacion: 'COLEGIO',
+        rif_identificador: '',
+        color_primario: '#1e8a6f',
+        color_secundario: '#0f172a',
+        admin_email: '',
+        admin_password: '',
+      });
+      setTimeout(() => {
+        setOpenCreateModal(false);
+        setSuccessMessage('');
+        fetchDashboardData();
+      }, 1500);
+    } catch (err) {
+      setErrorMessage(
+        err.response?.data?.detail || 'Error al crear el cliente. Verifique los datos ingresados.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#0f172a', color: '#f8fafc', py: 4, px: 2 }}>
@@ -71,6 +140,8 @@ export const OwnerDashboard = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
           }}
         >
           <Box display="flex" alignItems="center" gap={2}>
@@ -80,14 +151,33 @@ export const OwnerDashboard = () => {
                 Panel Owner Super Admin
               </Typography>
               <Typography variant="subtitle2" color="#94a3b8">
-                Métricas Globales de Rendimiento y Registro de Auditoría
+                Gestión Multi-Tenancy de Clientes, Métricas Globales y Auditoría
               </Typography>
             </Box>
           </Box>
 
-          <IconButton onClick={fetchDashboardData} sx={{ color: '#38bdf8' }}>
-            <RefreshIcon />
-          </IconButton>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddBusinessIcon />}
+              onClick={() => setOpenCreateModal(true)}
+              sx={{
+                bgcolor: '#38bdf8',
+                color: '#0f172a',
+                fontWeight: 'bold',
+                px: 3,
+                py: 1,
+                borderRadius: 2,
+                '&:hover': { bgcolor: '#0284c7', color: '#ffffff' },
+              }}
+            >
+              + Crear Nuevo Cliente / Plantel
+            </Button>
+            <IconButton onClick={fetchDashboardData} sx={{ color: '#38bdf8' }}>
+              <RefreshIcon />
+            </IconButton>
+          </Box>
         </Paper>
 
         {loading ? (
@@ -110,7 +200,7 @@ export const OwnerDashboard = () => {
                 >
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                     <Typography variant="subtitle2" color="#94a3b8">
-                      Estudiantes Activos
+                      Estudiantes / Personal Activo
                     </Typography>
                     <PeopleIcon sx={{ color: '#38bdf8' }} />
                   </Box>
@@ -118,12 +208,12 @@ export const OwnerDashboard = () => {
                     {metrics?.total_estudiantes_activos || 0}
                   </Typography>
                   <Typography variant="caption" color="#34d399">
-                    Padrón Escolar Registrado
+                    Padrón Total Registrado
                   </Typography>
                 </Paper>
               </Grid>
 
-              {/* Card 2: Asistencias de Hoy (Entradas vs Salidas) */}
+              {/* Card 2: Asistencias de Hoy */}
               <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   sx={{
@@ -173,7 +263,7 @@ export const OwnerDashboard = () => {
                 </Paper>
               </Grid>
 
-              {/* Card 4: Notificaciones Telegram */}
+              {/* Card 4: Clientes / Planteles Activos */}
               <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   sx={{
@@ -185,21 +275,84 @@ export const OwnerDashboard = () => {
                 >
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                     <Typography variant="subtitle2" color="#94a3b8">
-                      Mensajes Telegram
+                      Clientes / Planteles
                     </Typography>
-                    <SendIcon sx={{ color: '#06b6d4' }} />
+                    <BusinessIcon sx={{ color: '#a855f7' }} />
                   </Box>
-                  <Typography variant="h3" fontWeight="bold" color="#ffffff">
-                    {metrics?.notificaciones_enviadas || 0}
+                  <Typography variant="h3" fontWeight="bold" color="#a855f7">
+                    {colegios.length}
                   </Typography>
-                  <Typography variant="caption" color="#ef4444">
-                    {metrics?.notificaciones_fallidas || 0} Fallidos
+                  <Typography variant="caption" color="#94a3b8">
+                    Organizaciones Aisladas
                   </Typography>
                 </Paper>
               </Grid>
             </Grid>
 
-            {/* Tabla de Registro de Auditoría */}
+            {/* Tabla 1: Clientes Registrados */}
+            <Paper
+              elevation={4}
+              sx={{
+                p: 3,
+                mb: 4,
+                borderRadius: 3,
+                bgcolor: '#1e293b',
+                border: '1px solid #334155',
+              }}
+            >
+              <Typography variant="h6" fontWeight="bold" mb={3} color="#ffffff">
+                🏢 Clientes y Planteles Registrados (Multi-Tenancy)
+              </Typography>
+
+              <TableContainer>
+                <Table sx={{ minWidth: 650 }}>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: '#0f172a' }}>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Nombre del Cliente</TableCell>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Tipo</TableCell>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>RIF / Registro</TableCell>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Padrón</TableCell>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Estatus</TableCell>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Fecha Registro</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {colegios.length > 0 ? (
+                      colegios.map((col) => (
+                        <TableRow key={col.id} sx={{ '&:hover': { bgcolor: '#334155' } }}>
+                          <TableCell sx={{ color: '#ffffff', fontWeight: 'bold' }}>{col.nombre}</TableCell>
+                          <TableCell sx={{ color: '#38bdf8' }}>
+                            <Chip label={col.tipo_organizacion} size="small" color="secondary" />
+                          </TableCell>
+                          <TableCell sx={{ color: '#cbd5e1' }}>{col.rif_identificador || 'N/A'}</TableCell>
+                          <TableCell sx={{ color: '#34d399', fontWeight: 'bold' }}>
+                            {col.total_estudiantes} Registrados
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={col.activo ? 'ACTIVO' : 'INACTIVO'}
+                              size="small"
+                              color={col.activo ? 'success' : 'error'}
+                            />
+                          </TableCell>
+                          <TableCell sx={{ color: '#94a3b8' }}>
+                            {new Date(col.created_at).toLocaleDateString('es-ES')}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center" sx={{ color: '#64748b', py: 4 }}>
+                          No hay otros clientes creados. Utiliza el botón superior "+ Crear Nuevo Cliente"
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+
+            {/* Tabla 2: Registro de Auditoría */}
             <Paper
               elevation={4}
               sx={{
@@ -210,7 +363,7 @@ export const OwnerDashboard = () => {
               }}
             >
               <Typography variant="h6" fontWeight="bold" mb={3} color="#ffffff">
-                Registro de Auditoría y Logs del Sistema
+                📋 Registro de Auditoría y Logs del Sistema
               </Typography>
 
               <TableContainer>
@@ -219,7 +372,7 @@ export const OwnerDashboard = () => {
                     <TableRow sx={{ bgcolor: '#0f172a' }}>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Fecha / Hora</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Tipo Evento</TableCell>
-                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Estudiante</TableCell>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Estudiante / Sujeto</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Detalles / Resultado</TableCell>
                     </TableRow>
                   </TableHead>
@@ -257,6 +410,148 @@ export const OwnerDashboard = () => {
             </Paper>
           </>
         )}
+
+        {/* Modal de Creación de Nuevo Cliente */}
+        <Dialog
+          open={openCreateModal}
+          onClose={() => setOpenCreateModal(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              bgcolor: '#1e293b',
+              color: '#ffffff',
+              borderRadius: 3,
+              border: '1px solid #334155',
+            },
+          }}
+        >
+          <form onSubmit={handleCreateClient}>
+            <DialogTitle sx={{ fontWeight: 'bold', borderBottom: '1px solid #334155' }}>
+              🏢 Registrar Nuevo Cliente / Plantel / Empresa
+            </DialogTitle>
+
+            <DialogContent sx={{ py: 3 }}>
+              {errorMessage && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {errorMessage}
+                </Alert>
+              )}
+              {successMessage && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  {successMessage}
+                </Alert>
+              )}
+
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="Nombre de la Institución / Empresa"
+                    name="nombre"
+                    value={formData.nombre}
+                    onChange={handleInputChange}
+                    placeholder="ej. Colegio San Agustín / Empresa ACME"
+                    InputLabelProps={{ style: { color: '#94a3b8' } }}
+                    InputProps={{ style: { color: '#ffffff' } }}
+                    sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Tipo de Organización"
+                    name="tipo_organizacion"
+                    value={formData.tipo_organizacion}
+                    onChange={handleInputChange}
+                    InputLabelProps={{ style: { color: '#94a3b8' } }}
+                    InputProps={{ style: { color: '#ffffff' } }}
+                    sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' } }}
+                  >
+                    <MenuItem value="COLEGIO">Colegio / Escuela</MenuItem>
+                    <MenuItem value="UNIVERSIDAD">Universidad / Instituto</MenuItem>
+                    <MenuItem value="EMPRESA">Empresa / Corporativo</MenuItem>
+                    <MenuItem value="TRANSPORTE">Línea de Transporte</MenuItem>
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="RIF / Registro Fiscal"
+                    name="rif_identificador"
+                    value={formData.rif_identificador}
+                    onChange={handleInputChange}
+                    placeholder="ej. J-12345678-0"
+                    InputLabelProps={{ style: { color: '#94a3b8' } }}
+                    InputProps={{ style: { color: '#ffffff' } }}
+                    sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="#38bdf8" mt={2} mb={1} fontWeight="bold">
+                    🔑 Credenciales del Administrador del Plantel
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="email"
+                    label="Correo Administrador"
+                    name="admin_email"
+                    value={formData.admin_email}
+                    onChange={handleInputChange}
+                    placeholder="admin@colegio.com"
+                    InputLabelProps={{ style: { color: '#94a3b8' } }}
+                    InputProps={{ style: { color: '#ffffff' } }}
+                    sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' } }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="password"
+                    label="Contraseña Inicial"
+                    name="admin_password"
+                    value={formData.admin_password}
+                    onChange={handleInputChange}
+                    placeholder="******"
+                    InputLabelProps={{ style: { color: '#94a3b8' } }}
+                    InputProps={{ style: { color: '#ffffff' } }}
+                    sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' } }}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+
+            <DialogActions sx={{ p: 2.5, borderTop: '1px solid #334155' }}>
+              <Button onClick={() => setOpenCreateModal(false)} sx={{ color: '#94a3b8' }}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={submitting}
+                sx={{
+                  bgcolor: '#38bdf8',
+                  color: '#0f172a',
+                  fontWeight: 'bold',
+                  '&:hover': { bgcolor: '#0284c7', color: '#ffffff' },
+                }}
+              >
+                {submitting ? <CircularProgress size={24} /> : 'Guardar Cliente'}
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
       </Container>
     </Box>
   );

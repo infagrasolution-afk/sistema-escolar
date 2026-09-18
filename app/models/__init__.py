@@ -1,5 +1,6 @@
 from app.models.asistencia import Asistencia
 from app.models.base import Base
+from app.models.colegio import Colegio
 from app.models.enums import CanalNotificacion, EstadoAsistencia, RolUsuario
 from app.models.estudiante import Estudiante
 from app.models.log_notificacion import LogNotificacion
@@ -12,6 +13,7 @@ __all__ = [
     "RolUsuario",
     "EstadoAsistencia",
     "CanalNotificacion",
+    "Colegio",
     "Usuario",
     "Representante",
     "Estudiante",
@@ -19,3 +21,4 @@ __all__ = [
     "TokenVinculacion",
     "LogNotificacion",
 ]
+

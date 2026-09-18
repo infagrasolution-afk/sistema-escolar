@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.asistencia import Asistencia
     from app.models.representante import Representante
     from app.models.token_vinculacion import TokenVinculacion
+    from app.models.colegio import Colegio
 
 
 class Estudiante(Base):
@@ -22,6 +23,12 @@ class Estudiante(Base):
         primary_key=True,
         default=uuid.uuid4,
         server_default=func.gen_random_uuid(),
+    )
+    colegio_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("colegios.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     codigo_opaco: Mapped[str] = mapped_column(
         String(64),
@@ -65,6 +72,11 @@ class Estudiante(Base):
     )
 
     # Relaciones
+    colegio: Mapped[Optional["Colegio"]] = relationship(
+        "Colegio",
+        back_populates="estudiantes",
+        lazy="selectin",
+    )
     representante: Mapped[Optional["Representante"]] = relationship(
         "Representante",
         back_populates="estudiantes",

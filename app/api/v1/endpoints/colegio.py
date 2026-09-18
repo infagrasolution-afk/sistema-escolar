@@ -1,18 +1,138 @@
-from typing import Any
+from typing import Any, List
+import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import func
 
 from app.core.database import get_db
 from app.core.deps import require_role
+from app.core.security import get_password_hash
+from app.models.colegio import Colegio
 from app.models.enums import RolUsuario
 from app.models.usuario import Usuario
-from app.schemas.colegio import ColegioConfigBase, ColegioConfigUpdate
+from app.models.estudiante import Estudiante
+from app.schemas.colegio import (
+    ColegioConfigBase,
+    ColegioConfigUpdate,
+    ColegioCreate,
+    ColegioOut,
+)
 
 router = APIRouter()
 
-# Almacenamiento en memoria/configuración por defecto de la organización
+# Configuración en memoria / fallback por defecto
 _colegio_config_db = ColegioConfigBase()
+
+
+@router.get(
+    "",
+    response_model=List[ColegioOut],
+    summary="Listar todos los Clientes/Colegios (Exclusivo Super Admin)",
+)
+async def list_colegios(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_role([RolUsuario.SUPER_ADMIN])),
+) -> Any:
+    """
+    Lista todos los clientes/colegios registrados en la plataforma.
+    """
+    result = await db.execute(select(Colegio).order_by(Colegio.created_at.desc()))
+    colegios = result.scalars().all()
+    
+    # Calcular total de estudiantes por colegio
+    output = []
+    for col in colegios:
+        count_res = await db.execute(
+            select(func.count(Estudiante.id)).where(Estudiante.colegio_id == col.id)
+        )
+        total_est = count_res.scalar() or 0
+        
+        col_out = ColegioOut(
+            id=col.id,
+            nombre=col.nombre,
+            rif_identificador=col.rif_identificador,
+            tipo_organizacion=col.tipo_organizacion,
+            activo=col.activo,
+            color_primario=col.color_primario,
+            color_secundario=col.color_secundario,
+            logotipo_url=col.logotipo_url,
+            sello_url=col.sello_url,
+            poliza_seguro=col.poliza_seguro,
+            orientacion=col.orientacion,
+            tipo_codigo=col.tipo_codigo,
+            created_at=col.created_at,
+            total_estudiantes=total_est,
+        )
+        output.append(col_out)
+        
+    return output
+
+
+@router.post(
+    "",
+    response_model=ColegioOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear un Nuevo Cliente / Plantel / Empresa (Exclusivo Super Admin)",
+)
+async def create_colegio(
+    colegio_in: ColegioCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_role([RolUsuario.SUPER_ADMIN])),
+) -> Any:
+    """
+    Crea un nuevo cliente en el sistema multi-tenancy y genera automáticamente
+    las credenciales del Administrador de dicho plantel.
+    """
+    # Verificar si el usuario admin ya existe
+    user_check = await db.execute(select(Usuario).where(Usuario.email == colegio_in.admin_email))
+    if user_check.scalars().first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El correo {colegio_in.admin_email} ya está registrado en la plataforma.",
+        )
+
+    # Crear la organización/colegio
+    nuevo_colegio = Colegio(
+        nombre=colegio_in.nombre,
+        rif_identificador=colegio_in.rif_identificador,
+        tipo_organizacion=colegio_in.tipo_organizacion,
+        color_primario=colegio_in.color_primario,
+        color_secundario=colegio_in.color_secundario,
+        activo=True,
+    )
+    db.add(nuevo_colegio)
+    await db.flush()  # Obtener ID generado
+
+    # Crear usuario Administrador asignado a este colegio
+    nuevo_admin = Usuario(
+        email=colegio_in.admin_email,
+        password_hash=get_password_hash(colegio_in.admin_password),
+        rol=RolUsuario.ADMIN_CARNET,
+        colegio_id=nuevo_colegio.id,
+        activo=True,
+    )
+    db.add(nuevo_admin)
+    await db.commit()
+    await db.refresh(nuevo_colegio)
+
+    return ColegioOut(
+        id=nuevo_colegio.id,
+        nombre=nuevo_colegio.nombre,
+        rif_identificador=nuevo_colegio.rif_identificador,
+        tipo_organizacion=nuevo_colegio.tipo_organizacion,
+        activo=nuevo_colegio.activo,
+        color_primario=nuevo_colegio.color_primario,
+        color_secundario=nuevo_colegio.color_secundario,
+        logotipo_url=nuevo_colegio.logotipo_url,
+        sello_url=nuevo_colegio.sello_url,
+        poliza_seguro=nuevo_colegio.poliza_seguro,
+        orientacion=nuevo_colegio.orientacion,
+        tipo_codigo=nuevo_colegio.tipo_codigo,
+        created_at=nuevo_colegio.created_at,
+        total_estudiantes=0,
+    )
 
 
 @router.get(
