@@ -224,3 +224,30 @@ async def update_colegio_config(
     global _colegio_config_db
     _colegio_config_db = config_in
     return _colegio_config_db
+
+
+@router.delete(
+    "/{colegio_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar un Cliente/Colegio (Exclusivo Super Admin)",
+)
+async def delete_colegio(
+    colegio_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_role([RolUsuario.SUPER_ADMIN])),
+) -> None:
+    """
+    Elimina un cliente/colegio registrado y sus datos asociados.
+    """
+    result = await db.execute(select(Colegio).where(Colegio.id == colegio_id))
+    colegio = result.scalar_one_or_none()
+
+    if not colegio:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente no encontrado",
+        )
+
+    await db.delete(colegio)
+    await db.commit()
+

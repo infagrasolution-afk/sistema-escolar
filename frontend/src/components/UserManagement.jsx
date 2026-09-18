@@ -33,6 +33,7 @@ import {
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import axios from 'axios';
 
@@ -154,6 +155,21 @@ export const UserManagement = () => {
     }
   };
 
+  const handleDeleteUser = async (userId, userEmail) => {
+    if (!window.confirm(`¿Está seguro de que desea eliminar permanentemente el usuario "${userEmail}"?`)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${API_BASE_URL}/usuarios/${userId}?hard_delete=true`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchUsuariosAndColegios();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Error al eliminar el usuario');
+    }
+  };
+
   const getColegioNombre = (cId) => {
     if (!cId) return 'Global / Sin Empresa';
     const match = colegios.find((c) => c.id === cId);
@@ -271,9 +287,14 @@ export const UserManagement = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton onClick={() => handleOpenEdit(user)} sx={{ color: '#38bdf8' }}>
+                        <IconButton onClick={() => handleOpenEdit(user)} sx={{ color: '#38bdf8' }} title="Editar Usuario">
                           <EditIcon />
                         </IconButton>
+                        {user.rol !== 'SUPER_ADMIN' && (
+                          <IconButton onClick={() => handleDeleteUser(user.id, user.email)} color="error" title="Eliminar Usuario">
+                            <DeleteIcon />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

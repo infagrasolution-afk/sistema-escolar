@@ -33,6 +33,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import BusinessIcon from '@mui/icons-material/Business';
+import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 
 import API_BASE_URL from '../apiConfig';
@@ -105,6 +106,21 @@ export const OwnerDashboard = () => {
       fetchDashboardData();
     } catch (err) {
       console.error('Error cambiando estado de notificaciones:', err);
+    }
+  };
+
+  const handleDeleteColegio = async (colegioId, colegioNombre) => {
+    if (!window.confirm(`¿Está seguro de que desea ELIMINAR PERMANENTEMENTE el cliente "${colegioNombre}" y todos sus usuarios/estudiantes?`)) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${API_BASE_URL}/colegios/${colegioId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Error al eliminar el cliente');
     }
   };
 
@@ -336,6 +352,7 @@ export const OwnerDashboard = () => {
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Alertas Telegram</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Estatus</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Fecha Registro</TableCell>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }} align="right">Acciones</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -381,11 +398,16 @@ export const OwnerDashboard = () => {
                           <TableCell sx={{ color: '#94a3b8' }}>
                             {new Date(col.created_at).toLocaleDateString('es-ES')}
                           </TableCell>
+                          <TableCell align="right">
+                            <IconButton onClick={() => handleDeleteColegio(col.id, col.nombre)} color="error" title="Eliminar Cliente">
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ color: '#64748b', py: 4 }}>
+                        <TableCell colSpan={8} align="center" sx={{ color: '#64748b', py: 4 }}>
                           No hay otros clientes creados. Utiliza el botón superior "+ Crear Nuevo Cliente"
                         </TableCell>
                       </TableRow>

@@ -184,15 +184,16 @@ async def update_usuario(
 @router.delete(
     "/{usuario_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Desactivar usuario del sistema",
+    summary="Eliminar o desactivar usuario del sistema",
 )
 async def delete_usuario(
     usuario_id: uuid.UUID,
+    hard_delete: bool = False,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(require_role(ALLOWED_USER_MANAGERS)),
 ) -> None:
     """
-    Desactiva la cuenta de un usuario del cliente.
+    Desactiva o elimina permanentemente la cuenta de un usuario.
     """
     query = select(Usuario).where(Usuario.id == usuario_id)
     result = await db.execute(query)
@@ -207,8 +208,12 @@ async def delete_usuario(
     if current_user.rol != RolUsuario.SUPER_ADMIN and user.colegio_id != current_user.colegio_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tiene permisos para desactivar usuarios de otra organización",
+            detail="No tiene permisos para eliminar o desactivar usuarios de otra organización",
         )
 
-    user.activo = False
+    if hard_delete or current_user.rol == RolUsuario.SUPER_ADMIN:
+        await db.delete(user)
+    else:
+        user.activo = False
+
     await db.commit()
