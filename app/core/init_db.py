@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal, engine
@@ -7,6 +7,7 @@ from app.core.security import get_password_hash
 from app.models.base import Base
 
 # Importar todos los modelos de la aplicación para registrarlos en Base.metadata
+from app.models.colegio import Colegio
 from app.models.usuario import Usuario
 from app.models.representante import Representante
 from app.models.estudiante import Estudiante
@@ -20,16 +21,44 @@ logger = logging.getLogger(__name__)
 
 async def init_db_users() -> None:
     """
-    1. Ejecuta DDL automático (create_all) para asegurar que todas las tablas existan en PostgreSQL.
+    1. Ejecuta DDL automático y migraciones directas (colegios, colegio_id) en PostgreSQL.
     2. Inicializa la cuenta del Dueño del Sistema ('linfante' con rol SUPER_ADMIN).
     """
     try:
-        # Crear todas las tablas si no existen
         async with engine.begin() as conn:
+            # 1. Crear tabla colegios si no existe
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS colegios (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    nombre VARCHAR(255) NOT NULL,
+                    rif_identificador VARCHAR(100),
+                    tipo_organizacion VARCHAR(50) NOT NULL DEFAULT 'COLEGIO',
+                    activo BOOLEAN NOT NULL DEFAULT TRUE,
+                    color_primario VARCHAR(50) NOT NULL DEFAULT '#1e8a6f',
+                    color_secundario VARCHAR(50) NOT NULL DEFAULT '#0f172a',
+                    logotipo_url TEXT,
+                    sello_url TEXT,
+                    poliza_seguro VARCHAR(255),
+                    orientacion VARCHAR(50) NOT NULL DEFAULT 'VERTICAL',
+                    tipo_codigo VARCHAR(50) NOT NULL DEFAULT 'QR',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+            """))
+
+            # 2. Agregar columna colegio_id a usuarios y estudiantes si no existen
+            await conn.execute(text("""
+                ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS colegio_id UUID REFERENCES colegios(id) ON DELETE CASCADE;
+            """))
+            await conn.execute(text("""
+                ALTER TABLE estudiantes ADD COLUMN IF NOT EXISTS colegio_id UUID REFERENCES colegios(id) ON DELETE CASCADE;
+            """))
+
+            # 3. Crear resto de tablas con SQLAlchemy Base
             await conn.run_sync(Base.metadata.create_all)
+
         logger.info("✅ Tablas de la base de datos verificadas/creadas con éxito.")
     except Exception as e:
-        logger.error(f"Error creando tablas en DB: {e}")
+        logger.error(f"Error creando tablas o agregando columnas en DB: {e}", exc_info=True)
 
     try:
         async with AsyncSessionLocal() as db:
@@ -58,4 +87,4 @@ async def init_db_users() -> None:
                 await db.commit()
                 logger.info("✅ Usuario Super Admin 'linfante' actualizado exitosamente.")
     except Exception as e:
-        logger.error(f"Error sembrando usuario inicial: {e}")
+        logger.error(f"Error sembrando usuario inicial: {e}", exc_info=True)

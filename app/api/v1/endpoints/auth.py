@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Optional
 import uuid
 
@@ -17,6 +18,8 @@ from app.core.deps import get_current_user
 from app.models.usuario import Usuario
 from app.schemas.auth import LoginRequest, Token
 from app.schemas.usuario import UsuarioResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -61,10 +64,12 @@ async def login(
         result = await db.execute(query)
         user = result.scalar_one_or_none()
     except Exception as e:
+        logger.error(f"Error consultando usuario en login: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="La base de datos se está inicializando. Intente nuevamente en unos segundos.",
         )
+
 
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
