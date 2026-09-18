@@ -156,11 +156,29 @@ async def refresh_token(
     return Token(access_token=new_access_token, token_type="bearer")
 
 
+import json
+
 @router.get("/me", response_model=UsuarioResponse)
+@router.get("/me/", response_model=UsuarioResponse, include_in_schema=False)
 async def read_current_user(
     current_user: Usuario = Depends(get_current_user),
 ) -> Any:
     """
     Retorna los datos de perfil del usuario actualmente autenticado en la sesión.
     """
-    return current_user
+    modulos_list = None
+    if current_user.modulos_permitidos:
+        try:
+            modulos_list = json.loads(current_user.modulos_permitidos)
+        except Exception:
+            modulos_list = [m.strip() for m in current_user.modulos_permitidos.split(",") if m.strip()]
+
+    return UsuarioResponse(
+        id=current_user.id,
+        email=current_user.email,
+        rol=current_user.rol,
+        colegio_id=current_user.colegio_id,
+        modulos_permitidos=modulos_list,
+        activo=current_user.activo,
+        created_at=current_user.created_at,
+    )
