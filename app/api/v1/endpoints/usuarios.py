@@ -77,10 +77,10 @@ async def create_usuario(
     if current_user.rol != RolUsuario.SUPER_ADMIN:
         # Forzar que pertenezca al mismo cliente que el admin creador
         assigned_colegio_id = current_user.colegio_id
-        if user_in.rol == RolUsuario.SUPER_ADMIN:
+        if user_in.rol in [RolUsuario.SUPER_ADMIN, RolUsuario.ADMIN_CARNET]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tiene permisos para crear usuarios con rol SUPER_ADMIN",
+                detail="No tiene permisos para asignar los roles exclusivas de ADMIN_CARNET o SUPER_ADMIN",
             )
 
     db_user = Usuario(
@@ -127,10 +127,10 @@ async def update_usuario(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tiene permisos para modificar usuarios de otra organización",
             )
-        if user_in.rol == RolUsuario.SUPER_ADMIN:
+        if user_in.rol in [RolUsuario.SUPER_ADMIN, RolUsuario.ADMIN_CARNET]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tiene permisos para promover usuarios a SUPER_ADMIN",
+                detail="No tiene permisos para promover usuarios a ADMIN_CARNET o SUPER_ADMIN",
             )
 
     if user_in.email is not None:

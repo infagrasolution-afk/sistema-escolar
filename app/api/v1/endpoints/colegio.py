@@ -105,11 +105,11 @@ async def create_colegio(
     db.add(nuevo_colegio)
     await db.flush()  # Obtener ID generado
 
-    # Crear usuario Administrador asignado a este colegio
+    # Crear usuario Administrador asignado a este colegio (Rol ADMIN_ACCESO)
     nuevo_admin = Usuario(
         email=colegio_in.admin_email,
         password_hash=get_password_hash(colegio_in.admin_password),
-        rol=RolUsuario.ADMIN_CARNET,
+        rol=RolUsuario.ADMIN_ACCESO,
         colegio_id=nuevo_colegio.id,
         activo=True,
     )
