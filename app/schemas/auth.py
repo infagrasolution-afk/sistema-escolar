@@ -1,9 +1,9 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str  # Permite tanto nombre de usuario (ej: linfante) como correo electrónico
     password: str
 
 

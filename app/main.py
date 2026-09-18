@@ -1,14 +1,27 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.api import api_router
 from app.core.config import settings
+from app.core.init_db import init_db_users
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        await init_db_users()
+    except Exception as e:
+        print(f"Error inicializando usuarios base en DB: {e}")
+    yield
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url="/api/v1/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Configuración de Middleware CORS

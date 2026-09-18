@@ -110,8 +110,8 @@ export const LoginView = () => {
           <form onSubmit={handleLogin}>
             <TextField
               fullWidth
-              label="Correo Electrónico"
-              type="email"
+              label="Usuario / Correo Electrónico"
+              type="text"
               variant="outlined"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

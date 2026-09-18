@@ -2,13 +2,13 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import RolUsuario
 
 
 class UsuarioBase(BaseModel):
-    email: EmailStr
+    email: str  # Nombre de usuario o correo electrónico
     rol: RolUsuario
     activo: bool = True
 
@@ -18,7 +18,7 @@ class UsuarioCreate(UsuarioBase):
 
 
 class UsuarioUpdate(BaseModel):
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     password: Optional[str] = None
     rol: Optional[RolUsuario] = None
     activo: Optional[bool] = None
