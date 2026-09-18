@@ -55,6 +55,7 @@ async def list_colegios(
             rif_identificador=col.rif_identificador,
             tipo_organizacion=col.tipo_organizacion,
             activo=col.activo,
+            notificaciones_activas=col.notificaciones_activas,
             color_primario=col.color_primario,
             color_secundario=col.color_secundario,
             logotipo_url=col.logotipo_url,
@@ -90,7 +91,7 @@ async def create_colegio(
     if user_check.scalars().first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"El correo {colegio_in.admin_email} ya está registrado en la plataforma.",
+            detail=f"El correo/usuario {colegio_in.admin_email} ya está registrado en la plataforma.",
         )
 
     # Crear la organización/colegio
@@ -100,6 +101,7 @@ async def create_colegio(
         tipo_organizacion=colegio_in.tipo_organizacion,
         color_primario=colegio_in.color_primario,
         color_secundario=colegio_in.color_secundario,
+        notificaciones_activas=colegio_in.notificaciones_activas,
         activo=True,
     )
     db.add(nuevo_colegio)
@@ -123,6 +125,7 @@ async def create_colegio(
         rif_identificador=nuevo_colegio.rif_identificador,
         tipo_organizacion=nuevo_colegio.tipo_organizacion,
         activo=nuevo_colegio.activo,
+        notificaciones_activas=nuevo_colegio.notificaciones_activas,
         color_primario=nuevo_colegio.color_primario,
         color_secundario=nuevo_colegio.color_secundario,
         logotipo_url=nuevo_colegio.logotipo_url,
@@ -132,6 +135,57 @@ async def create_colegio(
         tipo_codigo=nuevo_colegio.tipo_codigo,
         created_at=nuevo_colegio.created_at,
         total_estudiantes=0,
+    )
+
+
+@router.put(
+    "/{colegio_id}/toggle-notificaciones",
+    response_model=ColegioOut,
+    summary="Activar o Desactivar Notificaciones para un Cliente (Exclusivo Super Admin)",
+)
+async def toggle_notificaciones_colegio(
+    colegio_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_role([RolUsuario.SUPER_ADMIN])),
+) -> Any:
+    """
+    Permite al Super Admin activar o pausar la funcionalidad de envío de notificaciones
+    (ej. Telegram / WhatsApp) para un cliente específico.
+    """
+    result = await db.execute(select(Colegio).where(Colegio.id == colegio_id))
+    colegio = result.scalar_one_or_none()
+
+    if not colegio:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente no encontrado",
+        )
+
+    colegio.notificaciones_activas = not colegio.notificaciones_activas
+    await db.commit()
+    await db.refresh(colegio)
+
+    count_res = await db.execute(
+        select(func.count(Estudiante.id)).where(Estudiante.colegio_id == colegio.id)
+    )
+    total_est = count_res.scalar() or 0
+
+    return ColegioOut(
+        id=colegio.id,
+        nombre=colegio.nombre,
+        rif_identificador=colegio.rif_identificador,
+        tipo_organizacion=colegio.tipo_organizacion,
+        activo=colegio.activo,
+        notificaciones_activas=colegio.notificaciones_activas,
+        color_primario=colegio.color_primario,
+        color_secundario=colegio.color_secundario,
+        logotipo_url=colegio.logotipo_url,
+        sello_url=colegio.sello_url,
+        poliza_seguro=colegio.poliza_seguro,
+        orientacion=colegio.orientacion,
+        tipo_codigo=colegio.tipo_codigo,
+        created_at=colegio.created_at,
+        total_estudiantes=total_est,
     )
 
 

@@ -22,6 +22,8 @@ import {
   TextField,
   MenuItem,
   Alert,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
@@ -53,6 +55,7 @@ export const OwnerDashboard = () => {
     rif_identificador: '',
     color_primario: '#1e8a6f',
     color_secundario: '#0f172a',
+    notificaciones_activas: true,
     admin_email: '',
     admin_password: '',
   });
@@ -84,8 +87,25 @@ export const OwnerDashboard = () => {
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleToggleNotificaciones = async (colegioId) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.put(
+        `${API_BASE_URL}/colegios/${colegioId}/toggle-notificaciones`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Error cambiando estado de notificaciones:', err);
+    }
   };
 
   const handleCreateClient = async (e) => {
@@ -107,6 +127,7 @@ export const OwnerDashboard = () => {
         rif_identificador: '',
         color_primario: '#1e8a6f',
         color_secundario: '#0f172a',
+        notificaciones_activas: true,
         admin_email: '',
         admin_password: '',
       });
@@ -151,7 +172,7 @@ export const OwnerDashboard = () => {
                 Panel Owner Super Admin
               </Typography>
               <Typography variant="subtitle2" color="#94a3b8">
-                Gestión Multi-Tenancy de Clientes, Métricas Globales y Auditoría
+                Gestión Multi-Tenancy de Clientes, Control de Alertas y Auditoría
               </Typography>
             </Box>
           </Box>
@@ -301,7 +322,7 @@ export const OwnerDashboard = () => {
               }}
             >
               <Typography variant="h6" fontWeight="bold" mb={3} color="#ffffff">
-                🏢 Clientes y Planteles Registrados (Multi-Tenancy)
+                🏢 Clientes y Planteles Registrados (Multi-Tenancy & Control de Servicios)
               </Typography>
 
               <TableContainer>
@@ -312,6 +333,7 @@ export const OwnerDashboard = () => {
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Tipo</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>RIF / Registro</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Padrón</TableCell>
+                      <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Alertas Telegram</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Estatus</TableCell>
                       <TableCell sx={{ color: '#94a3b8', fontWeight: 'bold' }}>Fecha Registro</TableCell>
                     </TableRow>
@@ -329,6 +351,27 @@ export const OwnerDashboard = () => {
                             {col.total_estudiantes} Registrados
                           </TableCell>
                           <TableCell>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={col.notificaciones_activas !== false}
+                                  onChange={() => handleToggleNotificaciones(col.id)}
+                                  color="success"
+                                  size="small"
+                                />
+                              }
+                              label={
+                                <Chip
+                                  label={col.notificaciones_activas !== false ? 'ACTIVADAS' : 'PAUSADAS'}
+                                  size="small"
+                                  color={col.notificaciones_activas !== false ? 'success' : 'default'}
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.7rem' }}
+                                />
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
                             <Chip
                               label={col.activo ? 'ACTIVO' : 'INACTIVO'}
                               size="small"
@@ -342,7 +385,7 @@ export const OwnerDashboard = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ color: '#64748b', py: 4 }}>
+                        <TableCell colSpan={7} align="center" sx={{ color: '#64748b', py: 4 }}>
                           No hay otros clientes creados. Utiliza el botón superior "+ Crear Nuevo Cliente"
                         </TableCell>
                       </TableRow>
@@ -493,7 +536,25 @@ export const OwnerDashboard = () => {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="#38bdf8" mt={2} mb={1} fontWeight="bold">
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.notificaciones_activas}
+                        onChange={handleInputChange}
+                        name="notificaciones_activas"
+                        color="success"
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" color="#ffffff" fontWeight="bold">
+                        Habilitar Notificaciones de Asistencia (Telegram / Alertas)
+                      </Typography>
+                    }
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="#38bdf8" mt={1} mb={1} fontWeight="bold">
                     🔑 Credenciales del Administrador del Plantel
                   </Typography>
                 </Grid>

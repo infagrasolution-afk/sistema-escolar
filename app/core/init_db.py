@@ -45,7 +45,10 @@ async def init_db_users() -> None:
                 );
             """))
 
-            # 2. Agregar columna colegio_id a usuarios y estudiantes si no existen
+            # 2. Agregar columnas si no existen
+            await conn.execute(text("""
+                ALTER TABLE colegios ADD COLUMN IF NOT EXISTS notificaciones_activas BOOLEAN NOT NULL DEFAULT TRUE;
+            """))
             await conn.execute(text("""
                 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS colegio_id UUID REFERENCES colegios(id) ON DELETE CASCADE;
             """))

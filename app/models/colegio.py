@@ -41,6 +41,11 @@ class Colegio(Base):
         default=True,
         nullable=False,
     )
+    notificaciones_activas: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
     color_primario: Mapped[str] = mapped_column(
         String(50),
         default="#1e8a6f",

@@ -31,6 +31,7 @@ class ColegioCreate(BaseModel):
     tipo_organizacion: str = Field("COLEGIO", description="COLEGIO, UNIVERSIDAD, EMPRESA, TRANSPORTE")
     color_primario: str = Field("#1e8a6f", max_length=50)
     color_secundario: str = Field("#0f172a", max_length=50)
+    notificaciones_activas: bool = True
     
     # Credenciales iniciales del Administrador del Plantel (nombre de usuario o email)
     admin_email: str = Field(..., min_length=3, max_length=255)
@@ -44,6 +45,7 @@ class ColegioOut(BaseModel):
     rif_identificador: Optional[str] = None
     tipo_organizacion: str
     activo: bool
+    notificaciones_activas: bool = True
     color_primario: str
     color_secundario: str
     logotipo_url: Optional[str] = None

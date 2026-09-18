@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.asistencia import Asistencia
+from app.models.colegio import Colegio
 from app.models.enums import CanalNotificacion
 from app.models.estudiante import Estudiante
 from app.models.log_notificacion import LogNotificacion
@@ -167,6 +168,16 @@ async def enviar_notificacion_asistencia_telegram(
         return
 
     estudiante = asistencia.estudiante
+
+    # Verificar si las notificaciones están activas para esta organización / cliente
+    if estudiante.colegio_id:
+        query_col = select(Colegio).where(Colegio.id == estudiante.colegio_id)
+        res_col = await db.execute(query_col)
+        colegio = res_col.scalar_one_or_none()
+        if colegio and not colegio.notificaciones_activas:
+            logger.info(f"🚫 Notificaciones pausadas para el cliente '{colegio.nombre}' por el Super Admin.")
+            return
+
     representante = estudiante.representante
 
     if not representante or not representante.telegram_chat_id:
