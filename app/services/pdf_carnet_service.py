@@ -25,11 +25,12 @@ def generar_pdf_carnets_batch(
     subtitulo_carnet: str = "CARNET DE IDENTIFICACIÓN",
     ano_escolar: str = "2025-2026",
     poliza_seguro: Optional[str] = "APES - 002001-38 - Oceánica de Seguros",
+    tipo_codigo: str = "AMBOS",
 ) -> BytesIO:
     """
     Genera un documento PDF multipágina con dimensiones CR-80 (85.6mm x 54.0mm)
-    con soporte para plantillas Colegio vs Cooperativa/Transporte, orientación Horizontal/Vertical
-    y caras Frontal/Reverso.
+    con soporte para plantillas Colegio vs Cooperativa/Transporte, orientación Horizontal/Vertical,
+    caras Frontal/Reverso y opción de código: BARRA, QR o AMBOS.
     """
     is_vertical = orientacion.upper() == "VERTICAL"
     width = 54.0 * mm if is_vertical else 85.6 * mm
@@ -53,6 +54,7 @@ def generar_pdf_carnets_batch(
                 nombre_inst=nombre_institucion,
                 subtitulo=subtitulo_carnet,
                 ano_escolar=ano_escolar,
+                tipo_codigo=tipo_codigo,
             )
             c.showPage()
 
@@ -86,6 +88,7 @@ def _dibujar_cara_frontal(
     nombre_inst: str,
     subtitulo: str,
     ano_escolar: str,
+    tipo_codigo: str = "AMBOS",
 ) -> None:
     # 1. Fondo Blanco Base
     c.setFillColor(colors.white)
@@ -106,6 +109,7 @@ def _dibujar_cara_frontal(
         c.drawCentredString(w / 2.0, h - 11.5 * mm, f"PERÍODO: {ano_escolar}")
 
     is_cooperativa = "COOPERATIVA" in tipo_org.upper() or "TRANSPORTE" in tipo_org.upper()
+    codigo_mode = tipo_codigo.upper()
 
     if is_vertical:
         # Layout Vertical
@@ -143,8 +147,11 @@ def _dibujar_cara_frontal(
         label_det = "UNIDAD / RUTA:" if is_cooperativa else "GRADO / SECCIÓN:"
         c.drawCentredString(w / 2.0, role_band_y - 11.5 * mm, f"{label_det} {estudiante.grado_seccion}")
 
-        # Code 128 Barcode
-        _dibujar_codigo_barras(c, estudiante.codigo_opaco, w / 2.0, 4.0 * mm, bar_h=7.0 * mm)
+        # Render de Código (BARRA, QR o AMBOS)
+        if codigo_mode == "QR":
+            _dibujar_qr(c, estudiante.codigo_opaco, (w - 14.0 * mm) / 2.0, 3.0 * mm, size=14.0 * mm)
+        else:
+            _dibujar_codigo_barras(c, estudiante.codigo_opaco, w / 2.0, 3.0 * mm, bar_h=7.0 * mm)
 
     else:
         # Layout Horizontal
@@ -189,9 +196,14 @@ def _dibujar_cara_frontal(
         c.setFont("Helvetica-Bold", 6.5)
         c.drawString(info_x + 13.0 * mm, start_y - 14.5 * mm, f"{estudiante.codigo_opaco}")
 
-        # Barcode & QR
-        _dibujar_codigo_barras(c, estudiante.codigo_opaco, 32.0 * mm, 2.0 * mm, bar_h=8.0 * mm)
-        _dibujar_qr(c, estudiante.codigo_opaco, w - 14.0 * mm, 12.0 * mm, size=12.0 * mm)
+        # Render de Código según preferencia
+        if codigo_mode == "BARRA":
+            _dibujar_codigo_barras(c, estudiante.codigo_opaco, (w + info_x) / 2.0 - 5.0 * mm, 2.0 * mm, bar_h=9.0 * mm)
+        elif codigo_mode == "QR":
+            _dibujar_qr(c, estudiante.codigo_opaco, w - 20.0 * mm, 3.0 * mm, size=18.0 * mm)
+        else:  # AMBOS
+            _dibujar_codigo_barras(c, estudiante.codigo_opaco, 32.0 * mm, 2.0 * mm, bar_h=8.0 * mm)
+            _dibujar_qr(c, estudiante.codigo_opaco, w - 14.0 * mm, 12.0 * mm, size=12.0 * mm)
 
 
 def _dibujar_cara_reverso(
@@ -222,7 +234,7 @@ def _dibujar_cara_reverso(
 
     if is_vertical:
         lines = [
-            "1. Este carnet es personal e e intransferible.",
+            "1. Este carnet es personal e intransferible.",
             "2. Identifica al portador como miembro activo.",
             "3. En caso de extravío, notificar a la administración.",
             "4. Válido únicamente con sello y firma autorizada.",

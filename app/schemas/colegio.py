@@ -14,6 +14,7 @@ class ColegioConfigBase(BaseModel):
     color_primario: str = Field("#1e3a8a", max_length=20)
     color_secundario: str = Field("#000000", max_length=20)
     orientacion_predeterminada: str = Field("HORIZONTAL", description="HORIZONTAL o VERTICAL")
+    tipo_codigo: str = Field("AMBOS", description="BARRA, QR o AMBOS")
 
     model_config = ConfigDict(from_attributes=True)
 

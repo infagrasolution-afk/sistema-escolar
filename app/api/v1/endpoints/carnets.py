@@ -24,6 +24,7 @@ class BatchPdfRequest(BaseModel):
     orientacion: Optional[str] = None
     color_primario: Optional[str] = None
     cara: Optional[str] = "FRONTAL"
+    tipo_codigo: Optional[str] = "AMBOS"
 
 
 @router.get(
@@ -37,6 +38,7 @@ async def get_carnet_pdf(
     orientacion: Optional[str] = Query(None, description="HORIZONTAL o VERTICAL"),
     color_primario: Optional[str] = Query(None, description="Hex color por ej. #1e3a8a"),
     cara: str = Query("FRONTAL", description="FRONTAL, REVERSO o AMBAS"),
+    tipo_codigo: Optional[str] = Query(None, description="BARRA, QR o AMBOS"),
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(
         require_role([
@@ -63,6 +65,7 @@ async def get_carnet_pdf(
     tipo_org = tipo_organizacion or _colegio_config_db.tipo_organizacion
     ori = orientacion or _colegio_config_db.orientacion_predeterminada
     color_p = color_primario or _colegio_config_db.color_primario
+    t_codigo = tipo_codigo or _colegio_config_db.tipo_codigo
 
     pdf_buffer = generar_pdf_carnets_batch(
         estudiantes=[estudiante],
@@ -74,6 +77,7 @@ async def get_carnet_pdf(
         subtitulo_carnet=_colegio_config_db.subtitulo_carnet,
         ano_escolar=_colegio_config_db.ano_escolar,
         poliza_seguro=_colegio_config_db.poliza_seguro,
+        tipo_codigo=t_codigo,
     )
 
     return StreamingResponse(
@@ -125,6 +129,7 @@ async def get_carnets_batch_pdf(
     ori = batch_data.orientacion or _colegio_config_db.orientacion_predeterminada
     color_p = batch_data.color_primario or _colegio_config_db.color_primario
     cara = batch_data.cara or "FRONTAL"
+    t_codigo = batch_data.tipo_codigo or _colegio_config_db.tipo_codigo
 
     pdf_buffer = generar_pdf_carnets_batch(
         estudiantes=list(estudiantes),
@@ -136,6 +141,7 @@ async def get_carnets_batch_pdf(
         subtitulo_carnet=_colegio_config_db.subtitulo_carnet,
         ano_escolar=_colegio_config_db.ano_escolar,
         poliza_seguro=_colegio_config_db.poliza_seguro,
+        tipo_codigo=t_codigo,
     )
 
     return StreamingResponse(

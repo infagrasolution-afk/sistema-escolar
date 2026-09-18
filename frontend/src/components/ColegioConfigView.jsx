@@ -192,6 +192,22 @@ export const ColegioConfigView = () => {
               </FormControl>
             </Grid>
 
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Tipo de Código de Lectura</InputLabel>
+                <Select
+                  name="tipo_codigo"
+                  value={config.tipo_codigo || 'AMBOS'}
+                  onChange={handleChange}
+                  label="Tipo de Código de Lectura"
+                >
+                  <MenuItem value="AMBOS">Ambos (Código de Barras + QR)</MenuItem>
+                  <MenuItem value="BARRA">Solo Código de Barras (Code 128)</MenuItem>
+                  <MenuItem value="QR">Solo Código QR</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
             <Grid item xs={12}>
               <TextField
                 fullWidth

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
-  Card,
   Typography,
   Avatar,
   Button,
@@ -12,8 +11,6 @@ import {
   MenuItem,
   TextField,
   Grid,
-  Chip,
-  Divider,
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -25,11 +22,12 @@ import API_BASE_URL from '../apiConfig';
 export const StudentCardPrint = ({ estudiante }) => {
   const printRef = useRef(null);
 
-  // Cargar configuración de la organización por defecto
+  // Configuración dinámica
   const [tipoOrg, setTipoOrg] = useState('COLEGIO');
   const [orientacion, setOrientacion] = useState('HORIZONTAL');
   const [colorPrimario, setColorPrimario] = useState('#1e3a8a');
   const [cara, setCara] = useState('FRONTAL');
+  const [tipoCodigo, setTipoCodigo] = useState('AMBOS');
   const [nombreInst, setNombreInst] = useState('UNIDAD EDUCATIVA PRIVADA COLEGIO SAN AGUSTÍN');
   const [subtitulo, setSubtitulo] = useState('CARNET DE IDENTIFICACIÓN ESCOLAR');
 
@@ -46,6 +44,7 @@ export const StudentCardPrint = ({ estudiante }) => {
         setTipoOrg(res.data.tipo_organizacion || 'COLEGIO');
         setOrientacion(res.data.orientacion_predeterminada || 'HORIZONTAL');
         setColorPrimario(res.data.color_primario || '#1e3a8a');
+        if (res.data.tipo_codigo) setTipoCodigo(res.data.tipo_codigo);
         if (res.data.nombre_institucion) setNombreInst(res.data.nombre_institucion);
         if (res.data.subtitulo_carnet) setSubtitulo(res.data.subtitulo_carnet);
       }
@@ -79,17 +78,18 @@ export const StudentCardPrint = ({ estudiante }) => {
       orientacion: orientacion,
       color_primario: colorPrimario,
       cara: cara,
+      tipo_codigo: tipoCodigo,
     });
     window.open(`${apiBaseUrl}/carnets/${data.id}/pdf?${params.toString()}`, '_blank');
   };
 
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-      {/* Panel de Personalización y Controles de Impresión (Oculto en Impresión CSS) */}
+      {/* Panel de Personalización en Vivo */}
       <Paper
         className="no-print"
         elevation={3}
-        sx={{ p: 3, mb: 4, width: '100%', maxWidth: 850, borderRadius: 2 }}
+        sx={{ p: 3, mb: 4, width: '100%', maxWidth: 900, borderRadius: 2 }}
       >
         <Box display="flex" alignItems="center" gap={1} mb={2}>
           <StyleIcon color="primary" />
@@ -129,6 +129,21 @@ export const StudentCardPrint = ({ estudiante }) => {
 
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
+              <InputLabel>Tipo de Código</InputLabel>
+              <Select
+                value={tipoCodigo}
+                label="Tipo de Código"
+                onChange={(e) => setTipoCodigo(e.target.value)}
+              >
+                <MenuItem value="AMBOS">Ambos (Barras + QR)</MenuItem>
+                <MenuItem value="BARRA">Solo Código de Barras</MenuItem>
+                <MenuItem value="QR">Solo Código QR</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
               <InputLabel>Cara a Imprimir</InputLabel>
               <Select
                 value={cara}
@@ -142,11 +157,12 @@ export const StudentCardPrint = ({ estudiante }) => {
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Box display="flex" alignItems="center" gap={1}>
               <TextField
                 label="Color Membrete"
                 size="small"
+                fullWidth
                 value={colorPrimario}
                 onChange={(e) => setColorPrimario(e.target.value)}
               />
@@ -159,7 +175,7 @@ export const StudentCardPrint = ({ estudiante }) => {
             </Box>
           </Grid>
 
-          <Grid item xs={12} display="flex" gap={2} justifyContent="flex-end" mt={1}>
+          <Grid item xs={12} sm={6} md={8} display="flex" gap={2} justifyContent="flex-end">
             <Button
               variant="outlined"
               color="secondary"
@@ -297,22 +313,26 @@ export const StudentCardPrint = ({ estudiante }) => {
                   {isCooperativa ? 'UNIDAD / RUTA:' : 'GRADO / SECCIÓN:'} {data.grado_seccion}
                 </Typography>
 
-                {/* Código de barras */}
+                {/* Código según preferencia */}
                 <Box sx={{ mt: 'auto', textAlign: 'center' }}>
-                  <svg style={{ width: '44mm', height: '8mm' }} viewBox="0 0 200 40">
-                    <rect x="10" y="2" width="4" height="26" fill="#000000" />
-                    <rect x="18" y="2" width="2" height="26" fill="#000000" />
-                    <rect x="25" y="2" width="5" height="26" fill="#000000" />
-                    <rect x="35" y="2" width="3" height="26" fill="#000000" />
-                    <rect x="42" y="2" width="6" height="26" fill="#000000" />
-                    <rect x="52" y="2" width="2" height="26" fill="#000000" />
-                    <rect x="60" y="2" width="4" height="26" fill="#000000" />
-                    <rect x="70" y="2" width="3" height="26" fill="#000000" />
-                    <rect x="80" y="2" width="5" height="26" fill="#000000" />
-                    <text x="100" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#000000">
-                      {data.codigo_opaco}
-                    </text>
-                  </svg>
+                  {tipoCodigo === 'QR' ? (
+                    <Box sx={{ width: '12mm', height: '12mm', border: '1px solid #000', p: '1px', mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Typography sx={{ fontSize: '1.5mm', fontWeight: 'bold', color: '#000' }}>QR</Typography>
+                    </Box>
+                  ) : (
+                    <svg style={{ width: '44mm', height: '8mm' }} viewBox="0 0 200 40">
+                      <rect x="10" y="2" width="4" height="26" fill="#000000" />
+                      <rect x="18" y="2" width="2" height="26" fill="#000000" />
+                      <rect x="25" y="2" width="5" height="26" fill="#000000" />
+                      <rect x="35" y="2" width="3" height="26" fill="#000000" />
+                      <rect x="42" y="2" width="6" height="26" fill="#000000" />
+                      <rect x="52" y="2" width="2" height="26" fill="#000000" />
+                      <rect x="60" y="2" width="4" height="26" fill="#000000" />
+                      <text x="100" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#000000">
+                        {data.codigo_opaco}
+                      </text>
+                    </svg>
+                  )}
                 </Box>
               </Box>
             ) : (
@@ -354,10 +374,17 @@ export const StudentCardPrint = ({ estudiante }) => {
                     CÓDIGO: <span style={{ color: '#000000', fontWeight: 'bold' }}>{data.codigo_opaco}</span>
                   </Typography>
                 </Box>
+
+                {/* Si es solo QR en Horizontal */}
+                {tipoCodigo === 'QR' && (
+                  <Box sx={{ width: '14mm', height: '14mm', border: '1px solid #000', my: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '1.8mm', fontWeight: 'bold', color: '#000' }}>QR</Typography>
+                  </Box>
+                )}
               </Box>
             )}
 
-            {!isVertical && (
+            {!isVertical && (tipoCodigo === 'BARRA' || tipoCodigo === 'AMBOS') && (
               <Box sx={{ height: '12mm', display: 'flex', alignItems: 'center', justifyContent: 'center', pb: '1mm' }}>
                 <svg style={{ width: '60mm', height: '9mm' }} viewBox="0 0 200 40">
                   <rect x="10" y="2" width="3" height="26" fill="#000000" />
