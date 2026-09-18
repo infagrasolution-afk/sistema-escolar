@@ -53,3 +53,13 @@ async def root():
         "environment": settings.ENVIRONMENT,
         "version": "1.0.0",
     }
+
+
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Error interno del servidor: {str(exc)}"},
+    )
