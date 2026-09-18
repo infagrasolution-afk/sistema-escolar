@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
@@ -28,6 +28,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PrintIcon from '@mui/icons-material/Print';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,6 +53,50 @@ export const StudentManagement = () => {
   const [codigoOpaco, setCodigoOpaco] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
 
+  // Cámara en vivo para captura de foto
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const videoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+
+  const startCamera = async () => {
+    setIsCameraActive(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
+      });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Error accediendo a la cámara:', err);
+      alert('No se pudo acceder a la cámara de la laptop. Verifique los permisos en el navegador.');
+      setIsCameraActive(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 400;
+      canvas.height = video.videoHeight || 400;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      setFotoUrl(dataUrl);
+      stopCamera();
+    }
+  };
+
   const navigate = useNavigate();
 
   const fetchEstudiantes = async (searchTerm = '') => {
@@ -74,6 +119,7 @@ export const StudentManagement = () => {
   }, [search]);
 
   const handleOpenCreate = () => {
+    stopCamera();
     setSelectedStudent(null);
     setNombres('');
     setApellidos('');
@@ -85,8 +131,8 @@ export const StudentManagement = () => {
     setOpenModal(true);
   };
 
-
   const handleOpenEdit = (est) => {
+    stopCamera();
     setSelectedStudent(est);
     setNombres(est.nombres);
     setApellidos(est.apellidos);
@@ -300,41 +346,74 @@ export const StudentManagement = () => {
                 required
               />
 
-              {/* Campo y Botón para Subir Foto de Perfil */}
+              {/* Campo y Botón para Subir o Capturar Foto de Perfil */}
               <Box display="flex" alignItems="center" gap={2} my={2}>
                 <Avatar src={fotoUrl} sx={{ width: 64, height: 64, border: '2px solid #38bdf8' }}>
                   {nombres ? nombres[0] : 'F'}
                 </Avatar>
-                <Box flex={1}>
-                  <Button
-                    variant="outlined"
-                    component="label"
-                    color="info"
-                    size="small"
-                    fullWidth
-                  >
-                    Subir Imagen de Foto (PNG / JPG)
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files && e.target.files[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setFotoUrl(reader.result);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                    />
-                  </Button>
-                  <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                    Seleccione una foto desde su equipo o ingrese el enlace web abajo.
+                <Box flex={1} display="flex" flexDirection="column" gap={1}>
+                  <Box display="flex" gap={1}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      color="info"
+                      size="small"
+                      sx={{ flex: 1 }}
+                    >
+                      Subir Archivo
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files && e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setFotoUrl(reader.result);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      startIcon={<PhotoCameraIcon />}
+                      onClick={startCamera}
+                      sx={{ flex: 1 }}
+                    >
+                      Tomar Foto
+                    </Button>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Seleccione un archivo PNG/JPG o tome una foto en vivo con la cámara.
                   </Typography>
                 </Box>
               </Box>
+
+              {/* Visor de Cámara en Vivo */}
+              {isCameraActive && (
+                <Box sx={{ my: 2, textAlign: 'center', p: 1.5, bgcolor: '#0f172a', borderRadius: 2, border: '2px solid #38bdf8' }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{ width: '100%', maxHeight: 240, borderRadius: 8, objectFit: 'cover' }}
+                  />
+                  <Box display="flex" gap={1} justifyContent="center" mt={1}>
+                    <Button variant="contained" color="success" size="small" startIcon={<PhotoCameraIcon />} onClick={capturePhoto}>
+                      📸 Capturar Foto
+                    </Button>
+                    <Button variant="outlined" color="error" size="small" onClick={stopCamera}>
+                      Cancelar
+                    </Button>
+                  </Box>
+                </Box>
+              )}
 
               <TextField
                 fullWidth
