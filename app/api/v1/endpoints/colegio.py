@@ -38,12 +38,16 @@ _colegio_config_db = ColegioConfigBase()
 )
 async def list_colegios(
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(require_role([RolUsuario.SUPER_ADMIN])),
+    current_user: Usuario = Depends(require_role([RolUsuario.SUPER_ADMIN, RolUsuario.ADMIN_CARNET, RolUsuario.ADMIN_ACCESO])),
 ) -> Any:
     """
     Lista todos los clientes/colegios registrados en la plataforma.
     """
-    result = await db.execute(select(Colegio).order_by(Colegio.created_at.desc()))
+    query = select(Colegio).order_by(Colegio.created_at.desc())
+    if current_user.rol == RolUsuario.ADMIN_ACCESO and current_user.colegio_id:
+        query = query.where(Colegio.id == current_user.colegio_id)
+
+    result = await db.execute(query)
     colegios = result.scalars().all()
     
     # Calcular total de estudiantes por colegio

@@ -295,24 +295,24 @@ export const StudentCardPrint = ({ estudiante }) => {
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
       {/* Selector de Cliente / Empresa / Plantel para Impresión */}
-      {colegiosList.length > 0 && (
-        <Paper
-          className="no-print"
-          elevation={4}
-          sx={{
-            p: 2.5,
-            mb: 3,
-            width: '100%',
-            maxWidth: 950,
-            borderRadius: 3,
-            bgcolor: '#1e293b',
-            border: '1px solid #38bdf8',
-            color: '#ffffff',
-          }}
-        >
-          <Typography variant="subtitle1" fontWeight="bold" color="#38bdf8" mb={1} display="flex" alignItems="center" gap={1}>
-            <BusinessIcon sx={{ fontSize: 22 }} /> Seleccionar Cliente / Empresa / Plantel Activo para Carnetización
-          </Typography>
+      <Paper
+        className="no-print"
+        elevation={4}
+        sx={{
+          p: 2.5,
+          mb: 3,
+          width: '100%',
+          maxWidth: 950,
+          borderRadius: 3,
+          bgcolor: '#1e293b',
+          border: '1px solid #38bdf8',
+          color: '#ffffff',
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight="bold" color="#38bdf8" mb={1} display="flex" alignItems="center" gap={1}>
+          <BusinessIcon sx={{ fontSize: 22 }} /> Seleccionar Cliente / Empresa / Plantel Activo para Carnetización
+        </Typography>
+        {colegiosList.length > 0 ? (
           <FormControl fullWidth size="small">
             <Select
               value={selectedColegioId}
@@ -326,8 +326,19 @@ export const StudentCardPrint = ({ estudiante }) => {
               ))}
             </Select>
           </FormControl>
-        </Paper>
-      )}
+        ) : (
+          <Box display="flex" gap={2} alignItems="center">
+            <TextField
+              fullWidth
+              size="small"
+              label="Institución / Empresa Activa"
+              value={nombreInst}
+              onChange={(e) => setNombreInst(e.target.value)}
+              sx={{ input: { color: '#ffffff' }, label: { color: '#94a3b8' }, fieldset: { borderColor: '#475569' }, bgcolor: '#0f172a' }}
+            />
+          </Box>
+        )}
+      </Paper>
 
       {/* Card de Estado del Plantel / Empresa para la Impresión */}
       {(() => {
