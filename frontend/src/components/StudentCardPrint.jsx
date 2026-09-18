@@ -72,15 +72,37 @@ export const StudentCardPrint = ({ estudiante }) => {
     window.print();
   };
 
-  const handleDownloadPdf = () => {
-    const params = new URLSearchParams({
-      tipo_organizacion: tipoOrg,
-      orientacion: orientacion,
-      color_primario: colorPrimario,
-      cara: cara,
-      tipo_codigo: tipoCodigo,
-    });
-    window.open(`${apiBaseUrl}/carnets/${data.id}/pdf?${params.toString()}`, '_blank');
+  const handleDownloadPdf = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await axios.get(`${apiBaseUrl}/carnets/${data.id}/pdf`, {
+        params: {
+          tipo_organizacion: tipoOrg,
+          orientacion: orientacion,
+          color_primario: colorPrimario,
+          cara: cara,
+          tipo_codigo: tipoCodigo,
+          token: token,
+        },
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `carnet_${data.codigo_opaco || data.id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error al descargar el PDF:', err);
+      alert('Error al descargar el PDF del carnet.');
+    }
   };
 
   return (

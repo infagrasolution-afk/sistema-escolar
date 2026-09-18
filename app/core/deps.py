@@ -27,11 +27,14 @@ async def get_current_user(
     Extrae y valida el JWT de la cabecera Authorization (Bearer).
     Carga y retorna el modelo Usuario activo desde la base de datos.
     """
-    # Fallback si el token no viene en Authorization Header pero está en la cabecera directamente
+    # Fallback si el token no viene en Authorization Header pero está en la cabecera o query param
     if not token:
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
+
+    if not token:
+        token = request.query_params.get("token")
 
     if not token:
         raise HTTPException(
