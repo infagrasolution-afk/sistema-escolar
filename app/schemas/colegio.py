@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 import uuid
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ColegioConfigBase(BaseModel):
@@ -32,9 +32,10 @@ class ColegioCreate(BaseModel):
     color_primario: str = Field("#1e8a6f", max_length=50)
     color_secundario: str = Field("#0f172a", max_length=50)
     
-    # Credenciales iniciales del Administrador del Plantel
-    admin_email: EmailStr
+    # Credenciales iniciales del Administrador del Plantel (nombre de usuario o email)
+    admin_email: str = Field(..., min_length=3, max_length=255)
     admin_password: str = Field(..., min_length=6)
+
 
 
 class ColegioOut(BaseModel):

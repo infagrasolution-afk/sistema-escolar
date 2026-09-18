@@ -502,12 +502,11 @@ export const OwnerDashboard = () => {
                   <TextField
                     fullWidth
                     required
-                    type="email"
-                    label="Correo Administrador"
+                    label="Usuario Administrador / Correo"
                     name="admin_email"
                     value={formData.admin_email}
                     onChange={handleInputChange}
-                    placeholder="admin@colegio.com"
+                    placeholder="ej. admin_colegio o admin@colegio.com"
                     InputLabelProps={{ style: { color: '#94a3b8' } }}
                     InputProps={{ style: { color: '#ffffff' } }}
                     sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: '#475569' } }}

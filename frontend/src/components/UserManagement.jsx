@@ -238,8 +238,7 @@ export const UserManagement = () => {
 
               <TextField
                 fullWidth
-                label="Correo Electrónico"
-                type="email"
+                label="Usuario / Correo Electrónico"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 margin="normal"
