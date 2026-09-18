@@ -24,10 +24,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configuración de Middleware CORS
+# Configuración de Middleware CORS (Soporta credenciales HTTP-Only y orígenes de Render)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://escuela-frontend-9p9m.onrender.com",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
