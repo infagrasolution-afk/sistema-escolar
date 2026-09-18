@@ -29,6 +29,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PrintIcon from '@mui/icons-material/Print';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import BusinessIcon from '@mui/icons-material/Business';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -97,6 +98,8 @@ export const StudentManagement = () => {
     }
   };
 
+  const [nombrePlantel, setNombrePlantel] = useState('UNIDAD EDUCATIVA PRIVADA COLEGIO SAN AGUSTÍN');
+
   const navigate = useNavigate();
 
   const fetchEstudiantes = async (searchTerm = '') => {
@@ -114,7 +117,19 @@ export const StudentManagement = () => {
     }
   };
 
+  const fetchColegioConfig = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/colegio/config`);
+      if (res.data && res.data.nombre_institucion) {
+        setNombrePlantel(res.data.nombre_institucion);
+      }
+    } catch (err) {
+      console.error('Error cargando colegio config:', err);
+    }
+  };
+
   useEffect(() => {
+    fetchColegioConfig();
     fetchEstudiantes(search);
   }, [search]);
 
@@ -210,9 +225,19 @@ export const StudentManagement = () => {
               <Typography variant="h5" fontWeight="bold">
                 Administración de Estudiantes
               </Typography>
-              <Typography variant="subtitle2" color="#94a3b8">
-                Registro del Padrón Escolar, Carnetización y Tarjetas RFID
-              </Typography>
+              <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+                <Chip
+                  icon={<BusinessIcon sx={{ fontSize: 16, color: '#38bdf8 !important' }} />}
+                  label={`Plantel: ${nombrePlantel}`}
+                  size="small"
+                  sx={{
+                    bgcolor: 'rgba(56, 189, 248, 0.15)',
+                    color: '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    fontWeight: 'bold',
+                  }}
+                />
+              </Box>
             </Box>
           </Box>
 
