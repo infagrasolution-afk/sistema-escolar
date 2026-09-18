@@ -45,5 +45,4 @@ services:
         fromService:
           type: web
           name: escuela-backend
-          property: host
-          postfix: "/api/v1"
+          property: url
