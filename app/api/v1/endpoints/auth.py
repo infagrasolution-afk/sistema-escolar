@@ -56,9 +56,15 @@ async def login(
         )
 
     # Buscar usuario por nombre de usuario o email en la base de datos
-    query = select(Usuario).where(Usuario.email == username_or_email)
-    result = await db.execute(query)
-    user = result.scalar_one_or_none()
+    try:
+        query = select(Usuario).where(Usuario.email == username_or_email)
+        result = await db.execute(query)
+        user = result.scalar_one_or_none()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="La base de datos se está inicializando. Intente nuevamente en unos segundos.",
+        )
 
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
