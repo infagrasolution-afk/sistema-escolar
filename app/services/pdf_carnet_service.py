@@ -34,6 +34,9 @@ def generar_pdf_carnets_batch(
     orientacion: str = "HORIZONTAL",
     color_primario_hex: str = "#1e3a8a",
     color_secundario_hex: str = "#000000",
+    color_fondo_hex: str = "#ffffff",
+    fondo_opacidad: float = 0.20,
+    mostrar_barra_encabezado: bool = False,
     cara: str = "FRONTAL",
     nombre_institucion: str = "UNIDAD EDUCATIVA PRIVADA COLEGIO SAN AGUSTÍN",
     subtitulo_carnet: str = "CARNET DE IDENTIFICACIÓN",
@@ -45,7 +48,7 @@ def generar_pdf_carnets_batch(
     """
     Genera un documento PDF multipágina con dimensiones CR-80 (85.6mm x 54.0mm)
     con soporte para plantillas Colegio vs Cooperativa/Transporte, orientación Horizontal/Vertical,
-    caras Frontal/Reverso, imagen de fondo y opción de código: BARRA, QR o AMBOS.
+    caras Frontal/Reverso, imagen de fondo con transparencia ajustable, y opción de código: BARRA, QR o AMBOS.
     """
     is_vertical = (orientacion or "HORIZONTAL").upper() == "VERTICAL"
     width = 54.0 * mm if is_vertical else 85.6 * mm
@@ -71,6 +74,9 @@ def generar_pdf_carnets_batch(
                 ano_escolar=ano_escolar or "2025-2026",
                 tipo_codigo=tipo_codigo or "AMBOS",
                 fondo_url=fondo_url,
+                color_fondo_hex=color_fondo_hex,
+                fondo_opacidad=fondo_opacidad,
+                mostrar_barra_encabezado=mostrar_barra_encabezado,
             )
             c.showPage()
 
@@ -85,6 +91,10 @@ def generar_pdf_carnets_batch(
                 primary_color=primary_color,
                 nombre_inst=nombre_institucion or "UNIDAD EDUCATIVA",
                 poliza_seguro=poliza_seguro,
+                color_fondo_hex=color_fondo_hex,
+                fondo_opacidad=fondo_opacidad,
+                mostrar_barra_encabezado=mostrar_barra_encabezado,
+                fondo_url=fondo_url,
             )
             c.showPage()
 
@@ -106,38 +116,70 @@ def _dibujar_cara_frontal(
     ano_escolar: str,
     tipo_codigo: str = "AMBOS",
     fondo_url: Optional[str] = None,
+    color_fondo_hex: str = "#ffffff",
+    fondo_opacidad: float = 0.20,
+    mostrar_barra_encabezado: bool = False,
 ) -> None:
-    # 1. Fondo Blanco Base
-    c.setFillColor(colors.white)
+    # 1. Fondo base (por defecto blanco)
+    color_fondo = _parse_color(color_fondo_hex, "#ffffff")
+    c.setFillColor(color_fondo)
     c.rect(0, 0, w, h, fill=1, stroke=0)
 
-    # 1.5 Dibujar Imagen de Fondo personalizada si está configurada
+    # 1.5 Dibujar Imagen de Fondo personalizada si está configurada (con transparencia/marca de agua)
     if fondo_url:
         try:
+            from PIL import Image as PILImage
+            import base64
+
             if str(fondo_url).startswith("data:image"):
-                import base64
-                from io import BytesIO
                 header, data_str = str(fondo_url).split(",", 1)
                 img_data = base64.b64decode(data_str)
-                img_reader = ImageReader(BytesIO(img_data))
+                pil_img = PILImage.open(BytesIO(img_data)).convert("RGBA")
+            elif str(fondo_url).startswith("http"):
+                import httpx
+                resp = httpx.get(str(fondo_url), timeout=5.0)
+                pil_img = PILImage.open(BytesIO(resp.content)).convert("RGBA")
             else:
-                img_reader = ImageReader(str(fondo_url))
-            c.drawImage(img_reader, 0, 0, width=w, height=h)
+                pil_img = PILImage.open(str(fondo_url)).convert("RGBA")
+
+            alpha_factor = max(0.01, min(1.0, float(fondo_opacidad)))
+            r, g, b, a = pil_img.split()
+            a = a.point(lambda p: int(p * alpha_factor))
+            pil_img_trans = PILImage.merge("RGBA", (r, g, b, a))
+
+            c.drawImage(ImageReader(pil_img_trans), 0, 0, width=w, height=h, mask="auto")
         except Exception:
-            pass
+            try:
+                img_reader = ImageReader(str(fondo_url))
+                c.saveState()
+                c.setFillAlpha(max(0.01, min(1.0, float(fondo_opacidad))))
+                c.drawImage(img_reader, 0, 0, width=w, height=h)
+                c.restoreState()
+            except Exception:
+                pass
 
     # 2. Encabezado Institucional
     header_h = 14.0 * mm if is_vertical else 11.0 * mm
-    c.setFillColor(primary_color)
-    c.rect(0, h - header_h, w, header_h, fill=1, stroke=0)
+    if mostrar_barra_encabezado:
+        c.setFillColor(primary_color)
+        c.rect(0, h - header_h, w, header_h, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+    else:
+        # Modo Fondo Blanco / Limpio: Sin barra sólida, tipografía nítida en K-Resin negro y pizarra
+        c.setFillColor(K_RESIN_PURE_BLACK)
 
     # Texto Encabezado
-    c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 7.5 if is_vertical else 7.0)
     c.drawCentredString(w / 2.0, h - 4.5 * mm, (nombre_inst or "")[:38].upper())
+
+    if not mostrar_barra_encabezado:
+        c.setFillColor(colors.HexColor("#334155"))
     c.setFont("Helvetica", 5.5)
     c.drawCentredString(w / 2.0, h - 8.5 * mm, (subtitulo or "").upper())
+
     if is_vertical:
+        if not mostrar_barra_encabezado:
+            c.setFillColor(colors.HexColor("#64748b"))
         c.drawCentredString(w / 2.0, h - 11.5 * mm, f"PERÍODO: {ano_escolar or ''}")
 
     is_cooperativa = "COOPERATIVA" in (tipo_org or "").upper() or "TRANSPORTE" in (tipo_org or "").upper()
@@ -253,15 +295,50 @@ def _dibujar_cara_reverso(
     primary_color: colors.HexColor,
     nombre_inst: str,
     poliza_seguro: Optional[str],
+    color_fondo_hex: str = "#ffffff",
+    fondo_opacidad: float = 0.20,
+    mostrar_barra_encabezado: bool = False,
+    fondo_url: Optional[str] = None,
 ) -> None:
-    # Fondo Blanco
-    c.setFillColor(colors.white)
+    # Fondo Base
+    color_fondo = _parse_color(color_fondo_hex, "#ffffff")
+    c.setFillColor(color_fondo)
     c.rect(0, 0, w, h, fill=1, stroke=0)
 
+    # Marca de agua en reverso si existe fondo
+    if fondo_url:
+        try:
+            from PIL import Image as PILImage
+            import base64
+
+            if str(fondo_url).startswith("data:image"):
+                header, data_str = str(fondo_url).split(",", 1)
+                img_data = base64.b64decode(data_str)
+                pil_img = PILImage.open(BytesIO(img_data)).convert("RGBA")
+            elif str(fondo_url).startswith("http"):
+                import httpx
+                resp = httpx.get(str(fondo_url), timeout=5.0)
+                pil_img = PILImage.open(BytesIO(resp.content)).convert("RGBA")
+            else:
+                pil_img = PILImage.open(str(fondo_url)).convert("RGBA")
+
+            alpha_factor = max(0.01, min(1.0, float(fondo_opacidad)))
+            r, g, b, a = pil_img.split()
+            a = a.point(lambda p: int(p * alpha_factor))
+            pil_img_trans = PILImage.merge("RGBA", (r, g, b, a))
+
+            c.drawImage(ImageReader(pil_img_trans), 0, 0, width=w, height=h, mask="auto")
+        except Exception:
+            pass
+
     # Franja Superior
-    c.setFillColor(primary_color)
-    c.rect(0, h - 5.0 * mm, w, 5.0 * mm, fill=1, stroke=0)
-    c.setFillColor(colors.white)
+    if mostrar_barra_encabezado:
+        c.setFillColor(primary_color)
+        c.rect(0, h - 5.0 * mm, w, 5.0 * mm, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+    else:
+        c.setFillColor(K_RESIN_PURE_BLACK)
+
     c.setFont("Helvetica-Bold", 6)
     c.drawCentredString(w / 2.0, h - 3.8 * mm, "INFORMACIÓN Y NORMATIVA DE USO")
 

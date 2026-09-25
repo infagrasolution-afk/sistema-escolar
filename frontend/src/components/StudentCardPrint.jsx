@@ -28,6 +28,10 @@ import {
   Snackbar,
   InputAdornment,
   CircularProgress,
+  Slider,
+  Switch,
+  FormControlLabel,
+  Tooltip,
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -60,6 +64,9 @@ export const StudentCardPrint = ({ estudiante }) => {
   const [tipoOrg, setTipoOrg] = useState('COLEGIO');
   const [orientacion, setOrientacion] = useState('HORIZONTAL');
   const [colorPrimario, setColorPrimario] = useState('#1e3a8a');
+  const [colorFondo, setColorFondo] = useState('#ffffff');
+  const [fondoOpacidad, setFondoOpacidad] = useState(0.20);
+  const [mostrarBarraEncabezado, setMostrarBarraEncabezado] = useState(false);
   const [cara, setCara] = useState('FRONTAL');
   const [tipoCodigo, setTipoCodigo] = useState('AMBOS');
   const [nombreInst, setNombreInst] = useState('UNIDAD EDUCATIVA PRIVADA COLEGIO SAN AGUSTÍN');
@@ -231,6 +238,9 @@ export const StudentCardPrint = ({ estudiante }) => {
         }
         setOrientacion(res.data.orientacion_predeterminada || 'HORIZONTAL');
         setColorPrimario(res.data.color_primario || '#1e3a8a');
+        if (res.data.color_fondo) setColorFondo(res.data.color_fondo);
+        if (res.data.fondo_opacidad !== undefined) setFondoOpacidad(res.data.fondo_opacidad);
+        if (res.data.mostrar_barra_encabezado !== undefined) setMostrarBarraEncabezado(Boolean(res.data.mostrar_barra_encabezado));
         if (res.data.tipo_codigo) setTipoCodigo(res.data.tipo_codigo);
         if (res.data.subtitulo_carnet) setSubtitulo(res.data.subtitulo_carnet);
         if (res.data.fondo_url) setFondoUrl(res.data.fondo_url);
@@ -272,6 +282,11 @@ export const StudentCardPrint = ({ estudiante }) => {
       setActiveColegio(col);
       setNombreInst(col.nombre);
       setTipoOrg(col.tipo_organizacion || 'COLEGIO');
+      if (col.color_primario) setColorPrimario(col.color_primario);
+      if (col.color_fondo) setColorFondo(col.color_fondo);
+      if (col.fondo_opacidad !== undefined) setFondoOpacidad(col.fondo_opacidad);
+      if (col.mostrar_barra_encabezado !== undefined) setMostrarBarraEncabezado(Boolean(col.mostrar_barra_encabezado));
+      if (col.fondo_url !== undefined) setFondoUrl(col.fondo_url || '');
     }
     fetchEstudiantesList(colegioId);
   };
@@ -310,6 +325,9 @@ export const StudentCardPrint = ({ estudiante }) => {
           tipo_organizacion: tipoOrg,
           subtitulo_carnet: subtitulo,
           color_primario: colorPrimario,
+          color_fondo: colorFondo,
+          fondo_opacidad: fondoOpacidad,
+          mostrar_barra_encabezado: mostrarBarraEncabezado,
           orientacion_predeterminada: orientacion,
           tipo_codigo: tipoCodigo,
           fondo_url: fondoUrl,
@@ -356,6 +374,9 @@ export const StudentCardPrint = ({ estudiante }) => {
       tipo_organizacion: tipoOrg,
       orientacion: orientacion,
       color_primario: colorPrimario,
+      color_fondo: colorFondo,
+      fondo_opacidad: fondoOpacidad,
+      mostrar_barra_encabezado: mostrarBarraEncabezado,
       cara: cara,
       tipo_codigo: tipoCodigo,
       token: token || '',
@@ -367,6 +388,9 @@ export const StudentCardPrint = ({ estudiante }) => {
           tipo_organizacion: tipoOrg,
           orientacion: orientacion,
           color_primario: colorPrimario,
+          color_fondo: colorFondo,
+          fondo_opacidad: fondoOpacidad,
+          mostrar_barra_encabezado: mostrarBarraEncabezado,
           cara: cara,
           tipo_codigo: tipoCodigo,
           token: token,
@@ -743,18 +767,118 @@ export const StudentCardPrint = ({ estudiante }) => {
         </Paper>
 
         {/* Sección de Carga de Imagen de Fondo y Dimensiones Recomendadas */}
+        {/* Sección de Personalización de Fondo, Color y Transparencia */}
         <Paper elevation={0} sx={{ p: 2.5, mb: 3, bgcolor: '#0f172a', borderRadius: 2, border: '1px solid #334155' }}>
           <Typography variant="subtitle1" fontWeight="bold" color="#38bdf8" mb={1} display="flex" alignItems="center" gap={1}>
-            <UploadFileIcon sx={{ fontSize: 20 }} /> Imagen de Fondo del Carnet (CR-80 @ 300 DPI)
+            <UploadFileIcon sx={{ fontSize: 20 }} /> Personalización de Fondo, Color y Transparencia (CR-80)
           </Typography>
 
           <Alert severity="info" sx={{ mb: 2, bgcolor: 'rgba(56, 189, 248, 0.1)', color: '#e0f2fe', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-            <strong>Dimensiones Recomendadas de Fondo para Zebra ZXP 7:</strong><br />
-            • <strong>Vertical:</strong> 638 × 1013 píxeles (Relación 2:3)<br />
-            • <strong>Horizontal:</strong> 1013 × 638 píxeles (Relación 3:2)
+            <strong>Diseño Limpio y Marca de Agua:</strong> Por defecto, la barra verde superior está deshabilitada para ofrecer un carnet con <strong>fondo completamente blanco</strong>. Si agregas una imagen de fondo, se aplicará automáticamente con <strong>transparencia/marca de agua</strong> para que los datos, la foto y el código QR resalten al 100%.
           </Alert>
 
-          <Grid container spacing={2} alignItems="center">
+          <Grid container spacing={2.5} alignItems="center">
+            {/* Color de Fondo del Carnet */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Box display="flex" flexDirection="column" gap={0.8}>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 'bold' }}>
+                  Color de Fondo del Carnet
+                </Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    value={colorFondo}
+                    onChange={(e) => setColorFondo(e.target.value)}
+                    placeholder="#ffffff"
+                    sx={{ input: { color: '#ffffff' }, fieldset: { borderColor: '#475569' } }}
+                  />
+                  <input
+                    type="color"
+                    value={colorFondo || '#ffffff'}
+                    onChange={(e) => setColorFondo(e.target.value)}
+                    style={{ width: 40, height: 40, border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                    title="Seleccionar color de fondo"
+                  />
+                </Box>
+                {/* Botones de colores rápidos */}
+                <Box display="flex" gap={0.5} mt={0.5} flexWrap="wrap">
+                  {[
+                    { label: 'Blanco', color: '#ffffff' },
+                    { label: 'Crema', color: '#fefce8' },
+                    { label: 'Gris Suave', color: '#f8fafc' },
+                    { label: 'Celeste Claro', color: '#f0f9ff' },
+                  ].map((preset) => (
+                    <Chip
+                      key={preset.color}
+                      label={preset.label}
+                      size="small"
+                      onClick={() => setColorFondo(preset.color)}
+                      sx={{
+                        fontSize: '0.68rem',
+                        height: 22,
+                        bgcolor: colorFondo.toLowerCase() === preset.color.toLowerCase() ? '#0284c7' : '#334155',
+                        color: '#ffffff',
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: '#0369a1' },
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Estilo del Encabezado (Barra Superior) */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Box display="flex" flexDirection="column" gap={0.8}>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 'bold' }}>
+                  Estilo de Barra Superior
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={mostrarBarraEncabezado}
+                      onChange={(e) => setMostrarBarraEncabezado(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ color: '#ffffff', fontWeight: 500 }}>
+                      {mostrarBarraEncabezado ? 'Con Franja de Color' : 'Todo Blanco / Limpio (Sin barra)'}
+                    </Typography>
+                  }
+                />
+                <Typography variant="caption" sx={{ color: '#64748b' }}>
+                  {mostrarBarraEncabezado ? 'Muestra encabezado con el color seleccionado a la derecha' : 'Encabezado integrado sin franja sólida (Recomendado)'}
+                </Typography>
+              </Box>
+            </Grid>
+
+            {/* Color Primario / Franja */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Box display="flex" flexDirection="column" gap={0.8}>
+                <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 'bold' }}>
+                  {mostrarBarraEncabezado ? 'Color de Franja Superior' : 'Color de Acento Secundario'}
+                </Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    value={colorPrimario}
+                    onChange={(e) => setColorPrimario(e.target.value)}
+                    sx={{ input: { color: '#ffffff' }, fieldset: { borderColor: '#475569' } }}
+                  />
+                  <input
+                    type="color"
+                    value={colorPrimario}
+                    onChange={(e) => setColorPrimario(e.target.value)}
+                    style={{ width: 40, height: 40, border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                  />
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Carga de Imagen de Fondo */}
             <Grid item xs={12} sm={6}>
               <Button
                 fullWidth
@@ -784,17 +908,50 @@ export const StudentCardPrint = ({ estudiante }) => {
               />
             </Grid>
 
+            {/* Configuración de Transparencia de la Imagen de Fondo */}
             {fondoUrl && (
-              <Grid item xs={12} display="flex" alignItems="center" gap={2}>
-                <Box sx={{ width: 60, height: 40, borderRadius: 1, overflow: 'hidden', border: '1px solid #38bdf8' }}>
-                  <img src={fondoUrl} alt="Fondo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </Box>
-                <Typography variant="caption" color="#34d399" fontWeight="bold">
-                  ✓ Fondo Institucional Activo
-                </Typography>
-                <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={() => setFondoUrl('')}>
-                  Quitar Fondo
-                </Button>
+              <Grid item xs={12}>
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: '#1e293b', borderColor: '#38bdf8', borderRadius: 2 }}>
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={4} display="flex" alignItems="center" gap={2}>
+                      <Box sx={{ width: 60, height: 40, borderRadius: 1, overflow: 'hidden', border: '1px solid #38bdf8', flexShrink: 0 }}>
+                        <img src={fondoUrl} alt="Fondo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" color="#34d399" fontWeight="bold">
+                          ✓ Imagen de Fondo Activa
+                        </Typography>
+                        <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={() => setFondoUrl('')} sx={{ p: 0, minWidth: 'auto', mt: 0.5 }}>
+                          Quitar Fondo
+                        </Button>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12} sm={8}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                        <Typography variant="body2" sx={{ color: '#e0f2fe', fontWeight: 'bold' }}>
+                          Transparencia / Opacidad de Imagen: {Math.round(fondoOpacidad * 100)}%
+                        </Typography>
+                        <Chip
+                          label={fondoOpacidad <= 0.3 ? 'Marca de Agua Óptima' : 'Opacidad Alta'}
+                          color={fondoOpacidad <= 0.3 ? 'success' : 'warning'}
+                          size="small"
+                        />
+                      </Box>
+                      <Slider
+                        value={Math.round(fondoOpacidad * 100)}
+                        min={5}
+                        max={100}
+                        step={5}
+                        onChange={(e, val) => setFondoOpacidad(val / 100)}
+                        sx={{ color: '#38bdf8' }}
+                      />
+                      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                        Recomendado: 15% - 25% para que la imagen actúe como marca de agua y resalten la foto, textos y código QR.
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
             )}
           </Grid>
@@ -866,26 +1023,7 @@ export const StudentCardPrint = ({ estudiante }) => {
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <Box display="flex" alignItems="center" gap={1}>
-              <TextField
-                label="Color Membrete"
-                size="small"
-                fullWidth
-                value={colorPrimario}
-                onChange={(e) => setColorPrimario(e.target.value)}
-                sx={{ input: { color: '#ffffff' }, label: { color: '#94a3b8' }, fieldset: { borderColor: '#475569' } }}
-              />
-              <input
-                type="color"
-                value={colorPrimario}
-                onChange={(e) => setColorPrimario(e.target.value)}
-                style={{ width: 38, height: 38, border: 'none', cursor: 'pointer', borderRadius: 4 }}
-              />
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={8} display="flex" gap={2} justifyContent="flex-end">
+          <Grid item xs={12} display="flex" gap={2} justifyContent="flex-end" mt={1}>
             <Button
               variant="outlined"
               color="secondary"
@@ -957,48 +1095,77 @@ export const StudentCardPrint = ({ estudiante }) => {
               position: 'relative',
               overflow: 'hidden',
               borderRadius: '3.18mm',
-              bgcolor: '#ffffff',
-              backgroundImage: fondoUrl ? `url("${fondoUrl}")` : 'none',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
+              bgcolor: colorFondo || '#ffffff',
               border: '1px solid #cbd5e1',
               display: 'flex',
               flexDirection: 'column',
               fontFamily: 'Arial, sans-serif',
             }}
           >
+            {/* Capa de Imagen de Fondo con Transparencia / Efecto Marca de Agua */}
+            {fondoUrl && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundImage: `url("${fondoUrl}")`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  opacity: Number(fondoOpacidad ?? 0.20),
+                  zIndex: 0,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+
             {/* Encabezado */}
             <Box
               sx={{
+                position: 'relative',
+                zIndex: 1,
                 height: isVertical ? '14mm' : '11mm',
-                bgcolor: colorPrimario,
-                color: '#ffffff',
+                bgcolor: mostrarBarraEncabezado ? colorPrimario : 'transparent',
+                color: mostrarBarraEncabezado ? '#ffffff' : '#0f172a',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 px: 1,
+                borderBottom: mostrarBarraEncabezado ? 'none' : '1px solid rgba(0, 0, 0, 0.08)',
               }}
             >
               <Typography
                 sx={{
                   fontSize: isVertical ? '2.4mm' : '2.3mm',
-                  fontWeight: 'bold',
-                  lineHeight: 1.1,
+                  fontWeight: 800,
+                  lineHeight: 1.15,
                   textAlign: 'center',
+                  color: mostrarBarraEncabezado ? '#ffffff' : '#0f172a',
+                  letterSpacing: '0.2px',
                 }}
               >
                 {nombreInst.toUpperCase()}
               </Typography>
-              <Typography sx={{ fontSize: '1.7mm', textAlign: 'center', opacity: 0.9 }}>
+              <Typography
+                sx={{
+                  fontSize: '1.7mm',
+                  textAlign: 'center',
+                  color: mostrarBarraEncabezado ? 'rgba(255,255,255,0.92)' : '#475569',
+                  fontWeight: 600,
+                  mt: '0.4mm',
+                }}
+              >
                 {subtitulo.toUpperCase()}
               </Typography>
             </Box>
 
             {/* Cuerpo de Carnet */}
             {isVertical ? (
-              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: '2mm' }}>
+              <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: '2mm' }}>
                 <Box
                   sx={{
                     width: '22mm',
@@ -1009,6 +1176,7 @@ export const StudentCardPrint = ({ estudiante }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     mb: '2mm',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                   }}
                 >
                   {data.foto_url ? (
@@ -1020,7 +1188,7 @@ export const StudentCardPrint = ({ estudiante }) => {
                   )}
                 </Box>
 
-                <Box sx={{ width: '100%', bgcolor: isCooperativa ? colorPrimario : '#0f172a', py: '0.8mm', mb: '2mm', textAlign: 'center' }}>
+                <Box sx={{ width: '100%', bgcolor: isCooperativa ? colorPrimario : '#0f172a', py: '0.8mm', mb: '2mm', textAlign: 'center', borderRadius: '0.5mm' }}>
                   <Typography sx={{ color: '#ffffff', fontSize: '2mm', fontWeight: 'bold' }}>
                     {isCooperativa ? 'SOCIO / CONDUCTOR' : 'ESTUDIANTE ACTIVO'}
                   </Typography>
@@ -1040,27 +1208,29 @@ export const StudentCardPrint = ({ estudiante }) => {
                 {/* Código según preferencia */}
                 <Box sx={{ mt: 'auto', textAlign: 'center' }}>
                   {tipoCodigo === 'QR' ? (
-                    <Box sx={{ width: '12mm', height: '12mm', border: '1px solid #000', p: '1px', mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Box sx={{ width: '12mm', height: '12mm', bgcolor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #000', p: '1px', mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       <Typography sx={{ fontSize: '1.5mm', fontWeight: 'bold', color: '#000' }}>QR</Typography>
                     </Box>
                   ) : (
-                    <svg style={{ width: '44mm', height: '8mm' }} viewBox="0 0 200 40">
-                      <rect x="10" y="2" width="4" height="26" fill="#000000" />
-                      <rect x="18" y="2" width="2" height="26" fill="#000000" />
-                      <rect x="25" y="2" width="5" height="26" fill="#000000" />
-                      <rect x="35" y="2" width="3" height="26" fill="#000000" />
-                      <rect x="42" y="2" width="6" height="26" fill="#000000" />
-                      <rect x="52" y="2" width="2" height="26" fill="#000000" />
-                      <rect x="60" y="2" width="4" height="26" fill="#000000" />
-                      <text x="100" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#000000">
-                        {data.codigo_opaco}
-                      </text>
-                    </svg>
+                    <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.9)', px: 0.5, py: 0.2, borderRadius: '0.5mm', display: 'inline-block' }}>
+                      <svg style={{ width: '44mm', height: '8mm' }} viewBox="0 0 200 40">
+                        <rect x="10" y="2" width="4" height="26" fill="#000000" />
+                        <rect x="18" y="2" width="2" height="26" fill="#000000" />
+                        <rect x="25" y="2" width="5" height="26" fill="#000000" />
+                        <rect x="35" y="2" width="3" height="26" fill="#000000" />
+                        <rect x="42" y="2" width="6" height="26" fill="#000000" />
+                        <rect x="52" y="2" width="2" height="26" fill="#000000" />
+                        <rect x="60" y="2" width="4" height="26" fill="#000000" />
+                        <text x="100" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#000000">
+                          {data.codigo_opaco}
+                        </text>
+                      </svg>
+                    </Box>
                   )}
                 </Box>
               </Box>
             ) : (
-              <Box sx={{ flex: 1, display: 'flex', px: '3mm', py: '2mm', gap: '3mm' }}>
+              <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', px: '3mm', py: '2mm', gap: '3mm' }}>
                 <Box
                   sx={{
                     width: '18mm',
@@ -1070,6 +1240,7 @@ export const StudentCardPrint = ({ estudiante }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                   }}
                 >
                   {data.foto_url ? (
@@ -1100,7 +1271,7 @@ export const StudentCardPrint = ({ estudiante }) => {
                 </Box>
 
                 {tipoCodigo === 'QR' && (
-                  <Box sx={{ width: '14mm', height: '14mm', border: '1px solid #000', my: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Box sx={{ width: '14mm', height: '14mm', bgcolor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #000', my: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                     <Typography sx={{ fontSize: '1.8mm', fontWeight: 'bold', color: '#000' }}>QR</Typography>
                   </Box>
                 )}
@@ -1108,19 +1279,21 @@ export const StudentCardPrint = ({ estudiante }) => {
             )}
 
             {!isVertical && (tipoCodigo === 'BARRA' || tipoCodigo === 'AMBOS') && (
-              <Box sx={{ height: '12mm', display: 'flex', alignItems: 'center', justifyContent: 'center', pb: '1mm' }}>
-                <svg style={{ width: '60mm', height: '9mm' }} viewBox="0 0 200 40">
-                  <rect x="10" y="2" width="3" height="26" fill="#000000" />
-                  <rect x="15" y="2" width="1" height="26" fill="#000000" />
-                  <rect x="18" y="2" width="4" height="26" fill="#000000" />
-                  <rect x="25" y="2" width="2" height="26" fill="#000000" />
-                  <rect x="30" y="2" width="5" height="26" fill="#000000" />
-                  <rect x="42" y="2" width="3" height="26" fill="#000000" />
-                  <rect x="48" y="2" width="2" height="26" fill="#000000" />
-                  <text x="100" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#000000">
-                    {data.codigo_opaco}
-                  </text>
-                </svg>
+              <Box sx={{ position: 'relative', zIndex: 1, height: '12mm', display: 'flex', alignItems: 'center', justifyContent: 'center', pb: '1mm' }}>
+                <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.9)', px: 0.5, py: 0.2, borderRadius: '0.5mm', display: 'inline-block' }}>
+                  <svg style={{ width: '60mm', height: '9mm' }} viewBox="0 0 200 40">
+                    <rect x="10" y="2" width="3" height="26" fill="#000000" />
+                    <rect x="15" y="2" width="1" height="26" fill="#000000" />
+                    <rect x="18" y="2" width="4" height="26" fill="#000000" />
+                    <rect x="25" y="2" width="2" height="26" fill="#000000" />
+                    <rect x="30" y="2" width="5" height="26" fill="#000000" />
+                    <rect x="42" y="2" width="3" height="26" fill="#000000" />
+                    <rect x="48" y="2" width="2" height="26" fill="#000000" />
+                    <text x="100" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#000000">
+                      {data.codigo_opaco}
+                    </text>
+                  </svg>
+                </Box>
               </Box>
             )}
           </Paper>
@@ -1137,7 +1310,7 @@ export const StudentCardPrint = ({ estudiante }) => {
               position: 'relative',
               overflow: 'hidden',
               borderRadius: '3.18mm',
-              bgcolor: '#ffffff',
+              bgcolor: colorFondo || '#ffffff',
               border: '1px solid #cbd5e1',
               display: 'flex',
               flexDirection: 'column',
@@ -1145,24 +1318,58 @@ export const StudentCardPrint = ({ estudiante }) => {
               fontFamily: 'Arial, sans-serif',
             }}
           >
-            <Box sx={{ bgcolor: colorPrimario, color: '#ffffff', py: '1mm', px: '2mm', mb: '2mm', textAlign: 'center' }}>
+            {/* Capa de fondo transparente también en reverso si existe */}
+            {fondoUrl && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundImage: `url("${fondoUrl}")`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  opacity: Number(fondoOpacidad ?? 0.20),
+                  zIndex: 0,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                bgcolor: mostrarBarraEncabezado ? colorPrimario : 'transparent',
+                color: mostrarBarraEncabezado ? '#ffffff' : '#0f172a',
+                py: '1mm',
+                px: '2mm',
+                mb: '2mm',
+                textAlign: 'center',
+                borderBottom: mostrarBarraEncabezado ? 'none' : '1px solid rgba(0, 0, 0, 0.1)',
+              }}
+            >
               <Typography sx={{ fontSize: '2mm', fontWeight: 'bold' }}>NORMATIVA DE USO</Typography>
             </Box>
 
-            <Typography sx={{ fontSize: '1.6mm', color: '#000000 !important', mb: '1mm' }}>
-              1. Este carnet es personal e intransferible.
-            </Typography>
-            <Typography sx={{ fontSize: '1.6mm', color: '#000000 !important', mb: '1mm' }}>
-              2. Identifica al portador como miembro registrado.
-            </Typography>
-            <Typography sx={{ fontSize: '1.6mm', color: '#000000 !important', mb: '2mm' }}>
-              3. En caso de pérdida, reportar a la administración.
-            </Typography>
-
-            <Box sx={{ mt: 'auto', border: '1px dashed #000000', p: '2mm', textAlign: 'center' }}>
-              <Typography sx={{ fontSize: '1.5mm', fontWeight: 'bold', color: '#000000' }}>
-                FIRMA Y SELLO AUTORIZADO
+            <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Typography sx={{ fontSize: '1.6mm', color: '#000000 !important', mb: '1mm' }}>
+                1. Este carnet es personal e intransferible.
               </Typography>
+              <Typography sx={{ fontSize: '1.6mm', color: '#000000 !important', mb: '1mm' }}>
+                2. Identifica al portador como miembro registrado.
+              </Typography>
+              <Typography sx={{ fontSize: '1.6mm', color: '#000000 !important', mb: '2mm' }}>
+                3. En caso de pérdida, reportar a la administración.
+              </Typography>
+
+              <Box sx={{ mt: 'auto', border: '1px dashed #000000', p: '2mm', textAlign: 'center', bgcolor: 'rgba(255, 255, 255, 0.85)' }}>
+                <Typography sx={{ fontSize: '1.5mm', fontWeight: 'bold', color: '#000000' }}>
+                  FIRMA Y SELLO AUTORIZADO
+                </Typography>
+              </Box>
             </Box>
           </Paper>
         )}

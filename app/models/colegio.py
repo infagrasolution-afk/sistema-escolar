@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 import uuid
 
-from sqlalchemy import Boolean, DateTime, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -55,6 +55,25 @@ class Colegio(Base):
         String(50),
         default="#0f172a",
         nullable=False,
+    )
+    color_fondo: Mapped[str] = mapped_column(
+        String(50),
+        default="#ffffff",
+        nullable=False,
+    )
+    fondo_opacidad: Mapped[float] = mapped_column(
+        Float,
+        default=0.20,
+        nullable=False,
+    )
+    mostrar_barra_encabezado: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    fondo_url: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
     )
     logotipo_url: Mapped[Optional[str]] = mapped_column(
         Text,

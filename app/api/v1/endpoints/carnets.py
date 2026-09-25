@@ -23,6 +23,9 @@ class BatchPdfRequest(BaseModel):
     tipo_organizacion: Optional[str] = None
     orientacion: Optional[str] = None
     color_primario: Optional[str] = None
+    color_fondo: Optional[str] = None
+    fondo_opacidad: Optional[float] = None
+    mostrar_barra_encabezado: Optional[bool] = None
     cara: Optional[str] = "FRONTAL"
     tipo_codigo: Optional[str] = "AMBOS"
 
@@ -48,6 +51,9 @@ async def get_carnet_pdf(
     tipo_organizacion: Optional[str] = Query(None, description="COLEGIO o COOPERATIVA_TRANSPORTE"),
     orientacion: Optional[str] = Query(None, description="HORIZONTAL o VERTICAL"),
     color_primario: Optional[str] = Query(None, description="Hex color por ej. #1e3a8a"),
+    color_fondo: Optional[str] = Query(None, description="Hex color de fondo ej. #ffffff"),
+    fondo_opacidad: Optional[float] = Query(None, description="Opacidad de la imagen de fondo 0.0 - 1.0"),
+    mostrar_barra_encabezado: Optional[bool] = Query(None, description="Si es True muestra franja coloreada, si es False fondo blanco"),
     cara: str = Query("FRONTAL", description="FRONTAL, REVERSO o AMBAS"),
     tipo_codigo: Optional[str] = Query(None, description="BARRA, QR o AMBOS"),
     db: AsyncSession = Depends(get_db),
@@ -87,6 +93,9 @@ async def get_carnet_pdf(
     tipo_org = tipo_organizacion or _colegio_config_db.tipo_organizacion
     ori = orientacion or _colegio_config_db.orientacion_predeterminada
     color_p = color_primario or _colegio_config_db.color_primario
+    color_f = color_fondo or getattr(_colegio_config_db, "color_fondo", "#ffffff")
+    opacidad_f = fondo_opacidad if fondo_opacidad is not None else getattr(_colegio_config_db, "fondo_opacidad", 0.20)
+    barra_enc = mostrar_barra_encabezado if mostrar_barra_encabezado is not None else getattr(_colegio_config_db, "mostrar_barra_encabezado", False)
     t_codigo = tipo_codigo or _colegio_config_db.tipo_codigo
 
     try:
@@ -95,6 +104,9 @@ async def get_carnet_pdf(
             tipo_organizacion=tipo_org,
             orientacion=ori,
             color_primario_hex=color_p,
+            color_fondo_hex=color_f,
+            fondo_opacidad=opacidad_f,
+            mostrar_barra_encabezado=barra_enc,
             cara=cara,
             nombre_institucion=_colegio_config_db.nombre_institucion,
             subtitulo_carnet=_colegio_config_db.subtitulo_carnet,
@@ -159,6 +171,9 @@ async def get_carnets_batch_pdf(
     tipo_org = batch_data.tipo_organizacion or _colegio_config_db.tipo_organizacion
     ori = batch_data.orientacion or _colegio_config_db.orientacion_predeterminada
     color_p = batch_data.color_primario or _colegio_config_db.color_primario
+    color_f = batch_data.color_fondo or getattr(_colegio_config_db, "color_fondo", "#ffffff")
+    opacidad_f = batch_data.fondo_opacidad if batch_data.fondo_opacidad is not None else getattr(_colegio_config_db, "fondo_opacidad", 0.20)
+    barra_enc = batch_data.mostrar_barra_encabezado if batch_data.mostrar_barra_encabezado is not None else getattr(_colegio_config_db, "mostrar_barra_encabezado", False)
     cara = batch_data.cara or "FRONTAL"
     t_codigo = batch_data.tipo_codigo or _colegio_config_db.tipo_codigo
 
@@ -167,6 +182,9 @@ async def get_carnets_batch_pdf(
         tipo_organizacion=tipo_org,
         orientacion=ori,
         color_primario_hex=color_p,
+        color_fondo_hex=color_f,
+        fondo_opacidad=opacidad_f,
+        mostrar_barra_encabezado=barra_enc,
         cara=cara,
         nombre_institucion=_colegio_config_db.nombre_institucion,
         subtitulo_carnet=_colegio_config_db.subtitulo_carnet,

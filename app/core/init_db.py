@@ -48,6 +48,10 @@ async def init_db_users() -> None:
             # 2. Agregar columnas si no existen
             await conn.execute(text("""
                 ALTER TABLE colegios ADD COLUMN IF NOT EXISTS notificaciones_activas BOOLEAN NOT NULL DEFAULT TRUE;
+                ALTER TABLE colegios ADD COLUMN IF NOT EXISTS color_fondo VARCHAR(50) NOT NULL DEFAULT '#ffffff';
+                ALTER TABLE colegios ADD COLUMN IF NOT EXISTS fondo_opacidad FLOAT NOT NULL DEFAULT 0.20;
+                ALTER TABLE colegios ADD COLUMN IF NOT EXISTS mostrar_barra_encabezado BOOLEAN NOT NULL DEFAULT FALSE;
+                ALTER TABLE colegios ADD COLUMN IF NOT EXISTS fondo_url TEXT;
             """))
             await conn.execute(text("""
                 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS colegio_id UUID REFERENCES colegios(id) ON DELETE CASCADE;

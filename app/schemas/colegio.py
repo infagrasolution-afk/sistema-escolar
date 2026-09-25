@@ -16,6 +16,9 @@ class ColegioConfigBase(BaseModel):
     poliza_seguro: Optional[str] = Field("APES - 002001-38 - Oceánica de Seguros", max_length=150)
     color_primario: str = Field("#1e8a6f", max_length=20)
     color_secundario: str = Field("#0f172a", max_length=20)
+    color_fondo: str = Field("#ffffff", max_length=20)
+    fondo_opacidad: float = Field(0.20, ge=0.0, le=1.0)
+    mostrar_barra_encabezado: bool = Field(False)
     orientacion_predeterminada: str = Field("VERTICAL", description="HORIZONTAL o VERTICAL")
     tipo_codigo: str = Field("QR", description="BARRA, QR o AMBOS")
 
@@ -32,6 +35,10 @@ class ColegioCreate(BaseModel):
     tipo_organizacion: str = Field("COLEGIO", description="COLEGIO, UNIVERSIDAD, EMPRESA, TRANSPORTE")
     color_primario: str = Field("#1e8a6f", max_length=50)
     color_secundario: str = Field("#0f172a", max_length=50)
+    color_fondo: str = Field("#ffffff", max_length=50)
+    fondo_opacidad: float = Field(0.20, ge=0.0, le=1.0)
+    mostrar_barra_encabezado: bool = Field(False)
+    fondo_url: Optional[str] = None
     notificaciones_activas: bool = True
     
     # Credenciales iniciales del Administrador del Plantel (nombre de usuario o email)
@@ -49,6 +56,10 @@ class ColegioOut(BaseModel):
     notificaciones_activas: bool = True
     color_primario: str
     color_secundario: str
+    color_fondo: str = "#ffffff"
+    fondo_opacidad: float = 0.20
+    mostrar_barra_encabezado: bool = False
+    fondo_url: Optional[str] = None
     logotipo_url: Optional[str] = None
     sello_url: Optional[str] = None
     poliza_seguro: Optional[str] = None
@@ -58,3 +69,4 @@ class ColegioOut(BaseModel):
     total_estudiantes: Optional[int] = 0
 
     model_config = ConfigDict(from_attributes=True)
+

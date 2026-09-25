@@ -67,6 +67,10 @@ async def list_colegios(
             notificaciones_activas=col.notificaciones_activas,
             color_primario=col.color_primario,
             color_secundario=col.color_secundario,
+            color_fondo=getattr(col, "color_fondo", "#ffffff"),
+            fondo_opacidad=getattr(col, "fondo_opacidad", 0.20),
+            mostrar_barra_encabezado=getattr(col, "mostrar_barra_encabezado", False),
+            fondo_url=getattr(col, "fondo_url", None),
             logotipo_url=col.logotipo_url,
             sello_url=col.sello_url,
             poliza_seguro=col.poliza_seguro,
@@ -119,6 +123,10 @@ async def create_colegio(
         tipo_organizacion=colegio_in.tipo_organizacion,
         color_primario=colegio_in.color_primario,
         color_secundario=colegio_in.color_secundario,
+        color_fondo=getattr(colegio_in, "color_fondo", "#ffffff"),
+        fondo_opacidad=getattr(colegio_in, "fondo_opacidad", 0.20),
+        mostrar_barra_encabezado=getattr(colegio_in, "mostrar_barra_encabezado", False),
+        fondo_url=getattr(colegio_in, "fondo_url", None),
         notificaciones_activas=colegio_in.notificaciones_activas,
         activo=True,
     )
@@ -146,6 +154,10 @@ async def create_colegio(
         notificaciones_activas=nuevo_colegio.notificaciones_activas,
         color_primario=nuevo_colegio.color_primario,
         color_secundario=nuevo_colegio.color_secundario,
+        color_fondo=getattr(nuevo_colegio, "color_fondo", "#ffffff"),
+        fondo_opacidad=getattr(nuevo_colegio, "fondo_opacidad", 0.20),
+        mostrar_barra_encabezado=getattr(nuevo_colegio, "mostrar_barra_encabezado", False),
+        fondo_url=getattr(nuevo_colegio, "fondo_url", None),
         logotipo_url=nuevo_colegio.logotipo_url,
         sello_url=nuevo_colegio.sello_url,
         poliza_seguro=nuevo_colegio.poliza_seguro,
@@ -197,6 +209,10 @@ async def toggle_notificaciones_colegio(
         notificaciones_activas=colegio.notificaciones_activas,
         color_primario=colegio.color_primario,
         color_secundario=colegio.color_secundario,
+        color_fondo=getattr(colegio, "color_fondo", "#ffffff"),
+        fondo_opacidad=getattr(colegio, "fondo_opacidad", 0.20),
+        mostrar_barra_encabezado=getattr(colegio, "mostrar_barra_encabezado", False),
+        fondo_url=getattr(colegio, "fondo_url", None),
         logotipo_url=colegio.logotipo_url,
         sello_url=colegio.sello_url,
         poliza_seguro=colegio.poliza_seguro,
@@ -227,6 +243,7 @@ async def get_colegio_config() -> Any:
 )
 async def update_colegio_config(
     config_in: ColegioConfigUpdate,
+    db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(
         require_role([
             RolUsuario.ADMIN_CARNET,
@@ -241,6 +258,27 @@ async def update_colegio_config(
     """
     global _colegio_config_db
     _colegio_config_db = config_in
+
+    # Si el usuario pertenece a un colegio, persistir en DB
+    if current_user.colegio_id:
+        try:
+            col_res = await db.execute(select(Colegio).where(Colegio.id == current_user.colegio_id))
+            colegio_db = col_res.scalar_one_or_none()
+            if colegio_db:
+                colegio_db.nombre = config_in.nombre_institucion
+                colegio_db.tipo_organizacion = config_in.tipo_organizacion
+                colegio_db.color_primario = config_in.color_primario
+                colegio_db.color_secundario = config_in.color_secundario
+                colegio_db.color_fondo = config_in.color_fondo
+                colegio_db.fondo_opacidad = config_in.fondo_opacidad
+                colegio_db.mostrar_barra_encabezado = config_in.mostrar_barra_encabezado
+                colegio_db.fondo_url = config_in.fondo_url
+                colegio_db.orientacion = config_in.orientacion_predeterminada
+                colegio_db.tipo_codigo = config_in.tipo_codigo
+                await db.commit()
+        except Exception:
+            pass
+
     return _colegio_config_db
 
 
